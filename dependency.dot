@@ -1,0 +1,172 @@
+digraph dependency_graph {
+    rankdir=TB;
+    splines=polyline;
+    compound=true;
+    node [fontname=Helvetica, fontsize=12, style=filled, shape=box];
+    edge [fontname=Helvetica, fontsize=10, color="#444444"];
+
+    // ── Node definitions ─────────────────────────────────────────────
+
+    // Goals
+    Fungibility [label="Fungibility", fillcolor="#4A90D9", fontcolor=white];
+    Privacy     [label="Privacy",     fillcolor="#4A90D9", fontcolor=white];
+
+    // Core
+    CoinJoin [label="CoinJoin", fillcolor="#E67E22", fontcolor=white, penwidth=2];
+
+    // CoinJoin properties
+    BFT           [label="BFT",                  fillcolor="#27AE60", fontcolor=white];
+    Decentralized [label="Fully Decentralized",   fillcolor="#27AE60", fontcolor=white];
+    NetSettle     [label="Net Settlement",        fillcolor="#27AE60", fontcolor=white];
+    Batching      [label="Arbitrary Batching",    fillcolor="#27AE60", fontcolor=white];
+    Market        [label="Market Based",          fillcolor="#27AE60", fontcolor=white];
+    Incentive     [label="Incentive Compatible",  fillcolor="#27AE60", fontcolor=white];
+
+    // Protocol instantiations — honest (left) and semi-honest (right)
+    HonestProtocol [
+        label="Honest Protocol\n(trusting peers)",
+        fillcolor="#FFF0D0", fontcolor="#6B3A00", color="#E6A817", penwidth=2
+    ];
+    SemiHonestProtocol [
+        label="Semi-Honest Protocol\n(metadata privacy required)",
+        fillcolor="#D8F0EE", fontcolor="#0d4a4a", color="#1A7A7A", penwidth=2
+    ];
+
+    // Shared protocol components
+    TxStateMachine [
+        label="Tx Construction\nState Machine",
+        fillcolor="#EDE7F6", fontcolor="#2C0080", color="#7B52CC", penwidth=2
+    ];
+
+    // Specs and interfaces
+    PSBTLattice [
+        label="PSBT Lattice Spec",
+        fillcolor="#F5F0FF", fontcolor="#2C0080", color="#7B52CC",
+        penwidth=2, style="filled,dashed", shape=component
+    ];
+    P2PChannel [
+        label="P2P Comms\nChannel",
+        fillcolor="#F5F0FF", fontcolor="#2C0080", color="#7B52CC",
+        penwidth=2, style="filled,dashed", shape=component
+    ];
+    MsgSetReplication [
+        label="Message Set\nReplication",
+        fillcolor="#F5F0FF", fontcolor="#2C0080", color="#7B52CC",
+        penwidth=2, style="filled,dashed", shape=component
+    ];
+
+    // Payment flow interfaces (boxed together)
+    subgraph cluster_payment_flow {
+        label="Payment Flow";
+        style=filled; fillcolor="#F0EEFF"; color="#7B52CC";
+        fontname=Helvetica; fontsize=11; fontcolor="#2C0080";
+        { rank=same; PaymentInit; PaymentConfirm; }
+
+        PaymentInit [
+            label="Payment Initiation\nMessage",
+            fillcolor="#F5F0FF", fontcolor="#2C0080", color="#7B52CC",
+            penwidth=2, style="filled,dashed", shape=component
+        ];
+        PaymentConfirm [
+            label="Payment Confirmation\nMessage",
+            fillcolor="#F5F0FF", fontcolor="#2C0080", color="#7B52CC",
+            penwidth=2, style="filled,dashed", shape=component
+        ];
+    }
+
+    // Coalition Formation — concrete instantiation of Market Based
+    CoalitionFormation [
+        label="Coalition Formation",
+        fillcolor="#D5F0D5", fontcolor="#1a4a1a", color="#27AE60", penwidth=2
+    ];
+
+    // Orderbook Mechanism — abstract interface beneath Coalition Formation
+    OrderbookMechanism [
+        label="Orderbook Mechanism",
+        fillcolor="#F5F0FF", fontcolor="#2C0080", color="#7B52CC",
+        penwidth=2, style="filled,dashed", shape=component
+    ];
+
+    // Open Gossip — concrete implementation of Orderbook Mechanism
+    OpenGossip [
+        label="Open Gossip",
+        fillcolor="#FDEBD0", color="#E6A817", fontcolor="#333333"
+    ];
+
+    // Cost Function — abstract dependency of Incentive Compatible
+    CostFunction [
+        label="Cost Function",
+        fillcolor="#F5F0FF", fontcolor="#2C0080", color="#7B52CC",
+        penwidth=2, style="filled,dashed", shape=component
+    ];
+
+    // Leaf implementations — honest (left): Nostr, iroh | semi-honest (right): BIP77Dir
+    Nostr    [label="Nostr",                fillcolor="#FDEBD0", color="#E6A817", fontcolor="#333333"];
+    Iroh     [label="iroh",                 fillcolor="#FDEBD0", color="#E6A817", fontcolor="#333333"];
+    BIP77Dir [label="BIP77 Directory\n(OHTTP)", fillcolor="#D0EEEE", color="#1A7A7A", fontcolor="#333333"];
+
+    // ── Layer constraints (second axis) ─────────────────────────────
+    { rank=same; Fungibility; Privacy; }
+    { rank=same; BFT; Decentralized; NetSettle; Batching; Market; Incentive; }
+    { rank=same; HonestProtocol; SemiHonestProtocol; }
+    { rank=same; CoalitionFormation; CostFunction; }
+    { rank=same; OrderbookMechanism; PSBTLattice; P2PChannel; MsgSetReplication; }
+    { rank=same; OpenGossip; Nostr; Iroh; BIP77Dir; }
+
+    // ── Honest/semi-honest axis ordering (invisible edges) ───────────
+    // Forces honest nodes left of semi-honest nodes within each layer
+    HonestProtocol -> SemiHonestProtocol [style=invis];
+    Iroh           -> BIP77Dir           [style=invis];
+
+    // ── Real edges ───────────────────────────────────────────────────
+
+    Fungibility -> CoinJoin;
+    Privacy     -> CoinJoin;
+
+    CoinJoin -> BFT;
+    CoinJoin -> Decentralized;
+    CoinJoin -> NetSettle;
+    CoinJoin -> Batching;
+    CoinJoin -> Market;
+    CoinJoin -> Incentive;
+
+    // Market Based → Coalition Formation (concrete instantiation)
+    Market             -> CoalitionFormation;
+    CoalitionFormation -> OrderbookMechanism;
+    OrderbookMechanism -> OpenGossip;
+
+    // Incentive Compatible co-depends with BFT, depends on Market and Cost Function
+    Incentive -> Market;
+    Incentive -> BFT;
+    Incentive -> CostFunction;
+    BFT       -> Incentive;
+
+    Batching  -> HonestProtocol;
+    Batching  -> SemiHonestProtocol;
+    Batching  -> TxStateMachine;
+
+    NetSettle -> HonestProtocol;
+    NetSettle -> SemiHonestProtocol;
+    NetSettle -> TxStateMachine;
+
+    HonestProtocol     -> TxStateMachine;
+    HonestProtocol     -> P2PChannel;
+
+    SemiHonestProtocol -> TxStateMachine;
+    SemiHonestProtocol -> MsgSetReplication [label="requires metadata privacy"];
+
+    TxStateMachine -> PSBTLattice       [label="by definition"];
+    TxStateMachine -> MsgSetReplication [label="practically", style=dashed];
+    TxStateMachine -> P2PChannel;
+
+    NetSettle -> PaymentInit [lhead=cluster_payment_flow];
+
+    PaymentInit    -> P2PChannel;
+    PaymentConfirm -> P2PChannel;
+
+    P2PChannel        -> Nostr;
+    P2PChannel        -> Iroh;
+    MsgSetReplication -> Nostr;
+    MsgSetReplication -> Iroh;
+    MsgSetReplication -> BIP77Dir [label="OHTTP metadata privacy"];
+}
