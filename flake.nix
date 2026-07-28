@@ -14,6 +14,7 @@
       ];
 
       imports = [
+        ./nix/mermaid.nix
         ./nix/preprocessors.nix
         ./nix/site.nix
         ./nix/devshell.nix
