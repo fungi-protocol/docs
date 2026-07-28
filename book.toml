@@ -1,0 +1,10 @@
+[book]
+title = "Fungi Protocol Suite"
+language = "en"
+src = "src"
+
+[preprocessor.graphviz]
+command = "mdbook-graphviz"
+
+[preprocessor.katex]
+command = "mdbook-katex"
