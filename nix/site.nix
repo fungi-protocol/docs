@@ -1,20 +1,23 @@
 { ... }:
 {
   perSystem =
-    { pkgs, ... }:
+    { pkgs, mmdc, ... }:
     let
       site = pkgs.stdenvNoCC.mkDerivation {
         name = "fungi-docs";
         src = ../.;
 
-        nativeBuildInputs = with pkgs; [
+        nativeBuildInputs = [ mmdc ] ++ (with pkgs; [
           mdbook
           mdbook-graphviz
           mdbook-katex
           graphviz
-        ];
+          python3
+        ]);
 
         buildPhase = ''
+          # mmdc writes a chromium profile under $HOME.
+          export HOME=$(mktemp -d)
           mdbook build -d $out
         '';
 

@@ -6,5 +6,8 @@ src = "src"
 [preprocessor.graphviz]
 command = "mdbook-graphviz"
 
+[preprocessor.mermaid]
+command = "python3 contrib/mermaid_ssr.py"
+
 [preprocessor.katex]
 command = "mdbook-katex"
