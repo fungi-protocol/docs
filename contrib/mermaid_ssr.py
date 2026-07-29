@@ -19,14 +19,15 @@ FENCE = re.compile(
 )
 
 
-def render(source):
+def render(source, theme, svg_id):
     with tempfile.TemporaryDirectory() as tmp:
         mmd = os.path.join(tmp, "in.mmd")
         svg = os.path.join(tmp, "out.svg")
         with open(mmd, "w") as f:
             f.write(source)
         result = subprocess.run(
-            ["mmdc", "-i", mmd, "-o", svg, "-b", "transparent"],
+            ["mmdc", "-i", mmd, "-o", svg,
+             "-b", "transparent", "-t", theme, "-I", svg_id],
             capture_output=True,
             text=True,
         )
@@ -34,21 +35,36 @@ def render(source):
             sys.stderr.write(result.stdout + result.stderr)
             sys.exit(1)
         with open(svg) as f:
-            # `svg` is not a block-level tag in commonmark, so bare svg
-            # markup would be parsed as inline html and escaped. The div
-            # wrapper (blank-line delimited) makes it a raw html block.
-            return "\n\n<div class=\"mermaid\">\n%s\n</div>\n\n" % f.read()
+            return f.read()
 
 
-def walk(items):
+def block(source, index):
+    """Both themes of one diagram; css picks which to show.
+
+    The svg is emitted inside a div because `svg` is not a block-level tag
+    in commonmark, so bare svg markup would be parsed as inline html and
+    escaped. Each svg needs its own id: mermaid scopes the stylesheet it
+    embeds by id, so two diagrams sharing one would style each other.
+    """
+    return "\n\n" + "\n".join(
+        '<div class="mermaid mermaid-%s">\n%s\n</div>'
+        % (name, render(source, theme, "mermaid-%d-%s" % (index, name)))
+        for name, theme in (("light", "default"), ("dark", "dark"))
+    ) + "\n\n"
+
+
+def walk(items, counter):
     for item in items:
         chapter = item.get("Chapter")
         if not chapter:
             continue
-        chapter["content"] = FENCE.sub(
-            lambda m: render(m.group("body")), chapter["content"]
-        )
-        walk(chapter["sub_items"])
+
+        def substitute(match):
+            counter[0] += 1
+            return block(match.group("body"), counter[0])
+
+        chapter["content"] = FENCE.sub(substitute, chapter["content"])
+        walk(chapter["sub_items"], counter)
 
 
 def main():
@@ -56,7 +72,7 @@ def main():
         sys.exit(0)
     _context, book = json.load(sys.stdin)
     # mdbook 0.5 renamed the top level key from `sections` to `items`.
-    walk(book.get("items", book.get("sections")))
+    walk(book.get("items", book.get("sections")), [0])
     json.dump(book, sys.stdout)
 
 
