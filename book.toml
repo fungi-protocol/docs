@@ -11,3 +11,6 @@ command = "python3 contrib/mermaid_ssr.py"
 
 [preprocessor.katex]
 command = "mdbook-katex"
+
+[output.html]
+additional-css = ["theme/diagrams.css"]
