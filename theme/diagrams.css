@@ -8,6 +8,33 @@
     margin: 1rem 0;
 }
 
+/* Scale wide graphs down to the content column instead of clipping them;
+   the svg viewBox keeps them sharp at any size. */
+.mdbook-graphviz-output svg,
+.mermaid svg {
+    display: block;
+    max-width: 100%;
+    height: auto;
+}
+
+/* On a phone the column is narrow enough that scaling to fit would leave the
+   labels unreadable, so diagrams keep their own size and scroll instead. The
+   diagram container is allowed past the page padding first, so the ones that
+   only just overflow still fit without scrolling. */
+@media (max-width: 700px) {
+    .mdbook-graphviz-output,
+    .mermaid {
+        margin-left: calc(-1 * var(--page-padding, 15px));
+        margin-right: calc(-1 * var(--page-padding, 15px));
+        padding: 0 var(--page-padding, 15px);
+    }
+
+    .mdbook-graphviz-output svg,
+    .mermaid svg {
+        max-width: none;
+    }
+}
+
 .mdbook-graphviz-output svg > g > polygon:first-of-type {
     fill: transparent;
 }
