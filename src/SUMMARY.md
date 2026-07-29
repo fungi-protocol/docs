@@ -8,3 +8,5 @@
 - [Semi-Honest](semi-honest/README.md)
   - [Cost Function](semi-honest/cost-function.md)
 - [Byzantine](byzantine/README.md)
+
+- [Rendering test](rendering-test.md)
