@@ -36,6 +36,8 @@ Wallet clustering is the broad term for a variety of techniques that can be used
 
 This body of work has, time and again, shown that misconceptions about privacy invariably err on the side of optimism. Moreover, depending on individual users' threat models, their adversary may have access to comprehensive auxiliary information. Such auxiliary information doesn't even need to be about the target user, information about other users may be useful for deanonymization of the target user. In cryptography, rotating long lived keys or favoring ephemeral ones can limit the scope of a compromise, but an individual's identity is who they are.
 
+This is discussed in full in [./collaborative_txn_privacy.md]
+
 The fungi protocol suite is designed to make arbitrary transactions possible between mutually consenting but distrusting peers. This means safety, liveness, and unlinkability of protocol messages. Within such a protocol peers are free to pursue whatever outcomes they desire.
 
 Privacy does not simply emerge naturally from collaborative transactions. Peers must actively optimize for that. Optimization involves the use of a cost function, an extension or generalization of the kind used for coin selection. This repository makes specific reccomendations with which the protocols are designed to be compatible. The recommended privacy related terms address Sybil resistance, the transaction structure (for example how output values are chosen in relation to others' input values) and the graph structure.
