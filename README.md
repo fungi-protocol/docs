@@ -1,3 +1,8 @@
+<!-- meta: audience
+privacy researches who care about why and how, the non-technical user who cares about why and developers who care about how
+technical: researchers and developers who care aobut why, how and what
+non-technical: plebs who care about mostly why
+-->
 # Fungi
 
 This repository contains documents that describe a family collaborative Bitcoin transaction construction protocols. The protocols form a progression towards decentralized and market based privacy preserving transactions.
@@ -36,3 +41,10 @@ This body of work has, time and again, shown that misconceptions about privacy i
 The fungi protocol suite is designed to make arbitrary transactions possible between mutually consenting but distrusting peers. This means safety, liveness, and unlinkability of protocol messages. Within such a protocol peers are free to pursue whatever outcomes they desire.
 
 Privacy does not simply emerge naturally from collaborative transactions. Peers must actively optimize for that. Optimization involves the use of a cost function, an extension or generalization of the kind used for coin selection. This repository makes specific reccomendations with which the protocols are designed to be compatible. The reccomended privacy related terms address Sybil resistance, the transaction structure (for example how output values are chosen in relation to others' input values) and the graph structure.
+
+## Structure of repo
+
+WIP
+
+<img width="1862" height="891" alt="image" src="https://github.com/user-attachments/assets/e8bb556c-178b-42be-8fa8-dc5019e5993b" />
+<!-- TODO: mermaid diagramify this -->
