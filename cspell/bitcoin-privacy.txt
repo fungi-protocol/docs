@@ -34,13 +34,18 @@ CPFP
 DLEQ
 ECDH
 feerate
+feerates
 finalizer
 HTLCs
 keytype
+KVACs
 locktime
 Merkle
+minrelayfee
+multisignature
 MuSig
 Payjoin
+permissioned
 permissionless
 preimages
 PSBT
@@ -50,7 +55,21 @@ RIPEMD
 scriptSig
 scriptWitness
 sighash
+standardness
 taptree
+unaddressable
 unlinkability
 UTXO
+vbytes
+WabiSabi
+wtxid
 xpub
+# Cryptography
+HPKE
+# Mathematics
+elementwise
+unioning
+# Game theory
+rivalrous
+# Cited authors
+Maurer
