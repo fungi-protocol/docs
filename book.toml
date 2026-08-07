@@ -5,12 +5,15 @@ src = "src"
 
 [preprocessor.graphviz]
 command = "mdbook-graphviz"
+after = ["links"]
 
 [preprocessor.mermaid]
 command = "python3 contrib/mermaid_ssr.py"
+after = ["links", "graphviz"]
 
 [preprocessor.katex]
 command = "mdbook-katex"
+after = ["links"]
 
 [output.html]
 additional-css = ["theme/diagrams.css"]
