@@ -1,0 +1,69 @@
+/* Diagrams are rendered to svg at build time, so they cannot restyle
+   themselves the way client-side mermaid does. Mermaid diagrams are emitted
+   once per theme and swapped here; graphviz keeps whatever its .dot source
+   asks for, with only graphviz's own defaults lifted for the dark themes. */
+.mdbook-graphviz-output,
+.mermaid {
+    overflow-x: auto;
+    margin: 1rem 0;
+}
+
+/* Scale wide graphs down to the content column instead of clipping them;
+   the svg viewBox keeps them sharp at any size. */
+.mdbook-graphviz-output svg,
+.mermaid svg {
+    display: block;
+    max-width: 100%;
+    height: auto;
+}
+
+/* On a phone the column is narrow enough that scaling to fit would leave the
+   labels unreadable, so diagrams keep their own size and scroll instead. The
+   diagram container is allowed past the page padding first, so the ones that
+   only just overflow still fit without scrolling. */
+@media (max-width: 700px) {
+    .mdbook-graphviz-output,
+    .mermaid {
+        margin-left: calc(-1 * var(--page-padding, 15px));
+        margin-right: calc(-1 * var(--page-padding, 15px));
+        padding: 0 var(--page-padding, 15px);
+    }
+
+    .mdbook-graphviz-output svg,
+    .mermaid svg {
+        max-width: none;
+    }
+}
+
+.mdbook-graphviz-output svg > g > polygon:first-of-type {
+    fill: transparent;
+}
+
+.mermaid-dark {
+    display: none;
+}
+
+html:is(.coal, .navy, .ayu) .mermaid-dark {
+    display: block;
+}
+
+html:is(.coal, .navy, .ayu) .mermaid-light {
+    display: none;
+}
+
+/* A .dot is expected to pick colours that hold up on either page background,
+   so nothing here touches them. Only graphviz's own defaults are lifted: plain
+   black disappears against a dark page, and a diagram that says nothing about
+   colour should still be readable. */
+html:is(.coal, .navy, .ayu) .mdbook-graphviz-output [stroke="black"] {
+    stroke: #b7b7b7;
+}
+
+/* Arrow heads, not node bodies: an unfilled shape carries fill="none". */
+html:is(.coal, .navy, .ayu) .mdbook-graphviz-output [fill="black"] {
+    fill: #b7b7b7;
+}
+
+html:is(.coal, .navy, .ayu) .mdbook-graphviz-output text:not([fill]) {
+    fill: #b7b7b7;
+}
