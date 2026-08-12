@@ -6,9 +6,40 @@ stale_after: 2026-10-31T00:00:00Z
 ---
 
 # Cost function framework for Bitcoin wallets
+ 
+This document describes how to score the outcomes of transacting on Bitcoin, in particular privacy outcomes. This is the basis for automating various decisions delegated by the user to the wallet.
 
-This document describes how score the outcomes of transacting on Bitcoin, in particular privacy outcomes. This is the basis for automating various decisions delegated by the user to the wallet.
+## Preliminaries
 
+TODO
+
+- this is an optimization problem, every optzn problem has a cost function
+- this actual cost function is a mixed strategy, we model it explicitly as a decision tree and we randomize
+- the thing we call "the" cost function is a pure strategy, it evaluates specific contingencies
+  - it is a sum of various terms
+    - objective costs
+    - privacy liabilities
+    - payoffs from completing goals (e.g. making a payment)
+  - every term is a piecewise linear function of time, terms evaluated and summed at a point in time
+
+## Wallet states and actions
+
+The input domain of the cost function is *wallet states*. A wallet state includes the wallet's confirmed and unconfirmed transactions, current observations and beliefs, policy parameters, and a queue of *intents*.
+
+Technically partial wallet states are permitted, since incomplete information about future transactions must still be evaluated. This is done under the assumption that the available information is a lower bound on the outcome. For example a co-spend proposal has a lower bound on the set of inputs in any transaction where it may be in effect.
+
+Intents can be on chain payments, i.e. a `TxOut` to be created, or more generally any unordered PSBT fragment. 
+
+### Decision tree structure
+
+A wallet constructs a decision tree whose root is the current wallet state. Each edge is an available action, and each node is the predicted wallet state produced by the sequence of actions leading up to it from the root.
+
+Leaves are mutually exclusive outcomes under consideration. An action may create or modify a collaborative transaction, advance a coalition formation negotiation, or fall back to a unilateral transaction. When a transaction is confirmed the corresponding intents are removed from the queue.
+
+FIXME The tree is constructed bottom up, starting with the desired outcomes, and working back towards the immediate actions that would lead to that outcome.
+
+The solver searches for sequences that lead to states with greater valuation. It values the leaves first, then propagates their bracketed or expected values toward the root. This reduces a plan involving many contingent future actions to comparisons among the actions available now.
+ 
 ## Coin selection with objective costs
 
 The coin selection problem in Bitcoin is that of deciding which of the unspent transaction outputs available to a wallet should be used when constructing a new transaction. Coin selection is constrained by the desired outcomes of constructing a transaction. The simplest example of such outcome is when the user is intending to make an on-chain payment: a transaction which includes an output whose value is the payment amount, and whose `scriptPubKey` is determined by the receiver. The most basic constraint then is that the payment output is included, giving control over those funds to the receiver.
@@ -21,13 +52,21 @@ Sometimes it's possible to closely approximate the effective cost of a payment o
 
 Framed as an optimization problem, coin selection aims to minimize transaction costs while still achieving the desired outcomes (e.g. making payments). Since the decision space scales exponentially in the number of available UTXOs, a brute force search will in general be intractable requiring an approach such as [branch and bound]( https://bitcoin.stackexchange.com/questions/119919/how-does-the-branch-and-bound-coin-selection-algorithm-work).
 
-## Internalizing expectation of future costs
+## Expectation and bracketing
 
+### Internalizing future costs
+ 
 The immediate costs of some action may not represent its long term consequences. Internalizing expectations of the future into the cost of an action makes optimization simpler, since decisions can be evaluated one step at a time.
 
-Abstractly, one might considering all actions that may follow any particular state, recursively. An expected cost can be derived by first assigning a cost to each terminal state, then weighting it according to a probability distribution. Adding these costs to the cost of the actions which immediately precede the terminal states internalizes future expected costs, and this can be propagated way back up to the immediately available actions.
-
+Abstractly, one might recursively consider all actions that may follow any particular state. An expected cost can be derived by first assigning a cost to each terminal state, then weighting it according to a probability distribution. Adding these costs to the cost of the actions which immediately precede the terminal states internalizes future expected costs, and this can be propagated all the way back to the immediately available actions.
+ 
 Unfortunately, enumerating every contingency like this, even if the depth is restricted, is not only intractable, but often hard to define. Assigning probabilities can also be tricky. Due to these challenges, in practice simplified models are instead used to internalize such future costs into the cost of the immediately available actions. Although this might not account for everything, that may eventually happen, that isn't really a goal worth pursuing so long as relative comparisons between alternatives are made possible.
+ 
+### Bracketed evaluation under incomplete information
+
+We model privacy liabilities as terms only reduce the evaluation of a particular state, and can only be reduced as more information is revealed. This means that for every state we can derive a best case and worst case cost, the worst case is based on the information already available and the best case is obtained by simply omitting any privacy related penalties from the sum.
+
+During the critical section of transaction construction, i.e. after the inputs are revealed and before signatures are posted, knowledge of the other users' inputs may improve the worst case bracket. Preparing the decision tree ahead of time and computing these brackets makes it possible to respond to this new information efficiently, finalizing the decision of which outputs to add to the transaction in order to obtain better outcomes.
 
 ### Future cost of spending (Bitcoin Core's waste metric)
 
@@ -117,28 +156,46 @@ As described in abstract terms above, a per intent deadline or confirmation targ
 
 The privacy sensitivity of a transaction determines whether the preferred behavior is to execute a payment even if privacy is sacrificed as the deadline approaches, or whether it's better to miss the deadline or even forego the transaction entirely if the payment cannot be made privately. This can be modeled as divergence towards negative or positive infinity after the deadline elapses.
 
-### Global privacy budget
-
-Finally, a global (i.e. per wallet, not per intent or transaction) budget specified as a percentage of all externally received funds is used to normalize all metrics so that the costs of actions with different privacy outcomes are directly comparable.
-
-This global budget limits overall spending for the purposes of privacy. This implies a lower bound for the expected harm from privacy leaks, since in specifying it the user is indicating that they wish to spend up to this amount preventing that harm. This accounts for any downsides as well, such as the censorship risk or additional resources consumed.
-
-When coins lack any sufficient privacy (e.g. when known to a counterparty), their value should be discounted by the budget, effectively devaluing non-private wallet states. As progress is made towards satisfying the thresholds on privacy metrics, some coins will be closer to their face value, an increase in subjective value. This simplifies the cost function so it only outputs a satoshi amount, allowing subjective and objective costs to be reduced to a single number, and therefore comparisons can be made between the wallet states predicted to result from taking one action vs. another.
-
-For example, suppose Alice set her budget to 1%. She receives a coin with value $x$. Her total budget $b_0$ is $0.01x$. The subjective balance of the wallet is $x - b_0 = 0.99x$. The wallet then automatically does a CoinJoin transaction and its subjective cost $y$ is subtracted from the budget, $b_1 = b_0 - y$. This is also deducted from the subjective balance, but due to an improvement in the privacy metrics the subjective balance increases overall (or the transaction wouldn't have been made). The coin with nominal value $x$ and subjective value $x - b_0$ has been destroyed, and replaced with a coin whose nominal value is $x - y$ and whose subjective value is at least $x - b_1$ and at most $x - y$.
-
-## Use in multiparty protocols
-
-In the context of a multiparty transaction construction, a fixed overhead of 10.5-12.5 vB per transaction incurs a cost can be shared with others. Since this is substantially smaller than a typical input, the savings are arguably negligible. If a cross input signature aggregation soft fork is enabled then instead of a fixed overhead, a per input overhead can additionally be shared among participants, providing a much stronger incentive than the fast diminishing fixed overhead's savings. Such savings are limited, ultimately by consensus block size limits, and practically by policy, which limits transactions to 100KvB (though this limit can be overcome by use of multisig and pre-signed transaction trees).
-
-Subjective benefits, in particular those related to privacy metrics, can be more strongly positive sum. Since terms derived from privacy metrics are often concerned with data controlled by the other parties, this can be strongly positive sum as the actions of each user individually may benefit every other user, not just themselves, a quadratic number of opportunities to create a surplus.
-
-Unless parties wish to censor each other, they should at the very least indifferent to the the actions of the other users. This is important for liveness, since secure transactions generally require unanimous consent which presents an inherent challenge for liveness. Therefore it makes sense to have prior agreement to avoid any actions which may result in negative utility.
-
-For instance, suppose Alice stands to benefit from funding a lightning channel. In order to do this they need to add the appropriate output, no different than a regular output, but on its own this is insufficient to be as valuable as a unilaterally controlled input: lightning channels require backout transactions signed by the other party to the channel, and secure presigned transactions require stable transaction IDs (no malleability). For this reason if some other party to the transaction chooses to add a non SegWit input, this suddenly devalues Alice's proposed output, and she has a rational reason to avoid signing the resulting transaction.
-
-For this reason we required that any such requirements are specified upfront and all parties agree to them prior to transaction construction. This must cover technical restrictions, such as spending outputs encumbered using `OP_CLTV` with constraining `nLocktime` field to non-overlapping intervals (i.e. one height based vs. one time based output), but also constraints on things like the feerate, nominal effective values of inputs, their script types (and/or spend types for P2TR outputs), nominal values, etc. This agreement must also distribute the net allocation of virtual bytes or weight units in the transaction to the parties involved, ensuring that the total size does not overflow.
-
-With such a setup, it is reasonable to define honest parties' as being indifferent to others arbitrary actions. For this to be incentive compatible we must also demand that the cost function which governs the decisions made during the protocol execution are indeed monotonically decreasing in new information. The input domain of the cost function is defined over partial transactions, and so lower bounds on the information contained within the transactions, such as a subset of the inputs or the outputs (unordered), can be evaluated as well. Monotonicity ensures that the subjective costs can only decrease as additional transaction data is revealed from the other parties, allowing decisions to be made with access to partial information.
-
-Note that this does allow the evaluation to change. For example, if one party's choice of inputs is already committed, and they then learn of the inputs of the other parties, this may change their evaluation of which set of outputs to add in the next stage of the protocol. Monotonicity ensures that this evaluation can only improve in the critical section of the protocol.
++### Piecewise-linear payoff curves and sign changes
++
++Each time-dependent term can be represented by a piecewise-linear curve. Collecting the breakpoints from the intent utilities, fee estimates, deadlines, and action durations partitions time into intervals. After shifting successor-state terms by the estimated duration of each action, their sum is still piecewise linear on the common refinement of these intervals.
++
++On an interval $[t_i,t_{i+1}]$, an action's cost therefore has the form
++
++$$C_a(t)=m_i t+b_i.$$
++
++If $m_i\neq0$, its only possible sign change in that interval is at $t^*=-b_i/m_i$. The root is relevant only if $t^*\in[t_i,t_{i+1}]$ and the curve enters the rational region $C_a<0$ there. If $m_i=0$, the sign is constant throughout the interval. Breakpoints themselves are checked explicitly to accommodate discontinuous policy terms.
++
++Scanning the refined segments gives the exact next time at which a branch changes from irrational to rational. Applying the same decomposition while backing values up through the decision tree yields a duration for which the wallet may wait before another choice is forced, without sampling time or treating every action-at-a-time as a distinct action.
++
+ ### Global privacy budget
+ 
+ Finally, a global (i.e. per wallet, not per intent or transaction) budget specified as a percentage of all externally received funds is used to normalize all metrics so that the costs of actions with different privacy outcomes are directly comparable.
+ 
+ This global budget limits overall spending for the purposes of privacy. This implies a lower bound for the expected harm from privacy leaks, since in specifying it the user is indicating that they wish to spend up to this amount preventing that harm. This accounts for any downsides as well, such as the censorship risk or additional resources consumed.
+ 
+ When coins lack any sufficient privacy (e.g. when known to a counterparty), their value should be discounted by the budget, effectively devaluing non-private wallet states. As progress is made towards satisfying the thresholds on privacy metrics, some coins will be closer to their face value, an increase in subjective value. This simplifies the cost function so it only outputs a satoshi amount, allowing subjective and objective costs to be reduced to a single number, and therefore comparisons can be made between the wallet states predicted to result from taking one action vs. another.
+ 
+ For example, suppose Alice set her budget to 1%. She receives a coin with value $x$. Her total budget $b_0$ is $0.01x$. The subjective balance of the wallet is $x - b_0 = 0.99x$. The wallet then automatically does a CoinJoin transaction and its subjective cost $y$ is subtracted from the budget, $b_1 = b_0 - y$. This is also deducted from the subjective balance, but due to an improvement in the privacy metrics the subjective balance increases overall (or the transaction wouldn't have been made). The coin with nominal value $x$ and subjective value $x - b_0$ has been destroyed, and replaced with a coin whose nominal value is $x - y$ and whose subjective value is at least $x - b_1$ and at most $x - y$.
+ 
+ ## Use in multiparty protocols
+ 
+ In the context of a multiparty transaction construction, a fixed overhead of 10.5-12.5 vB per transaction incurs a cost can be shared with others. Since this is substantially smaller than a typical input, the savings are arguably negligible. If a cross input signature aggregation soft fork is enabled then instead of a fixed overhead, a per input overhead can additionally be shared among participants, providing a much stronger incentive than the fast diminishing fixed overhead's savings. Such savings are limited, ultimately by consensus block size limits, and practically by policy, which limits transactions to 100KvB (though this limit can be overcome by use of multisig and pre-signed transaction trees).
+ 
+ Subjective benefits, in particular those related to privacy metrics, can be more strongly positive sum. Since terms derived from privacy metrics are often concerned with data controlled by the other parties, this can be strongly positive sum as the actions of each user individually may benefit every other user, not just themselves, a quadratic number of opportunities to create a surplus.
+ 
+ Unless parties wish to censor each other, they should at the very least indifferent to the the actions of the other users. This is important for liveness, since secure transactions generally require unanimous consent which presents an inherent challenge for liveness. Therefore it makes sense to have prior agreement to avoid any actions which may result in negative utility.
+ 
+ For instance, suppose Alice stands to benefit from funding a lightning channel. In order to do this they need to add the appropriate output, no different than a regular output, but on its own this is insufficient to be as valuable as a unilaterally controlled input: lightning channels require backout transactions signed by the other party to the channel, and secure presigned transactions require stable transaction IDs (no malleability). For this reason if some other party to the transaction chooses to add a non SegWit input, this suddenly devalues Alice's proposed output, and she has a rational reason to avoid signing the resulting transaction.
+ 
+ For this reason we required that any such requirements are specified upfront and all parties agree to them prior to transaction construction. This must cover technical restrictions, such as spending outputs encumbered using `OP_CLTV` with constraining `nLocktime` field to non-overlapping intervals (i.e. one height based vs. one time based output), but also constraints on things like the feerate, nominal effective values of inputs, their script types (and/or spend types for P2TR outputs), nominal values, etc. This agreement must also distribute the net allocation of virtual bytes or weight units in the transaction to the parties involved, ensuring that the total size does not overflow.
+ 
+-With such a setup, it is reasonable to define honest parties' as being indifferent to others arbitrary actions. For this to be incentive compatible we must also demand that the cost function which governs the decisions made during the protocol execution are indeed monotonically decreasing in new information. The input domain of the cost function is defined over partial transactions, and so lower bounds on the information contained within the transactions, such as a subset of the inputs or the outputs (unordered), can be evaluated as well. Monotonicity ensures that the subjective costs can only decrease as additional transaction data is revealed from the other parties, allowing decisions to be made with access to partial information.
+-
+-Note that this does allow the evaluation to change. For example, if one party's choice of inputs is already committed, and they then learn of the inputs of the other parties, this may change their evaluation of which set of outputs to add in the next stage of the protocol. Monotonicity ensures that this evaluation can only improve in the critical section of the protocol.
++With such a setup, it is reasonable to define honest parties as being indifferent to others' arbitrary compatible actions. For this to be incentive compatible, the cost function that governs decisions during protocol execution must be monotonically decreasing in new information.
++
++The input domain remains wallet states. A partial transaction is information contained in a wallet state, not an alternative domain for the function. A state may therefore contain only a lower bound on a prospective transaction, such as an unordered subset of its inputs or outputs. The wallet evaluates the resulting bracket over successor states. Monotonicity ensures that a fixed plan's subjective cost can only decrease as other parties reveal additional compatible transaction data, allowing decisions to be made safely with partial information.
++
++The preferred plan may still change. For example, if one party's choice of inputs is already committed and they then learn the other parties' inputs, the new information may change which set of outputs they prefer to add next. The cost of each compatible plan can only improve during the critical section, even when their ordering changes.
+>>>>>>> conflict 1 of 1 ends
