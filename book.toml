@@ -3,6 +3,11 @@ title = "Fungi Protocol Suite"
 language = "en"
 src = "src"
 
+[preprocessor.jupyter]
+command = "python3 contrib/jupyter_nb.py"
+after = ["links"]
+before = ["graphviz", "mermaid", "katex"]
+
 [preprocessor.graphviz]
 command = "mdbook-graphviz"
 after = ["links"]
@@ -18,3 +23,4 @@ after = ["links"]
 [output.html]
 additional-css = ["theme/diagrams.css"]
 git-repository-url = "https://github.com/fungi-protocol/docs"
+additional-js = ["theme/nb-table.js"]
