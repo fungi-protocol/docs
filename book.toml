@@ -17,3 +17,4 @@ after = ["links"]
 
 [output.html]
 additional-css = ["theme/diagrams.css"]
+git-repository-url = "https://github.com/fungi-protocol/docs"
