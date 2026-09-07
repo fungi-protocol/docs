@@ -265,7 +265,7 @@ Deanonymization of networks with exactly this kind of structure is a well studie
 
 Any observable pattern in a cluster is potentially useful for such an analysis. These divide into *statistical* features (fee-rate habits, activity timing and time zone, value distributions) and *structural* features (the shape a cluster carves through the graph and its links to other clusters).
 
-**Wallet software fingerprints** are a special case of the statistical kind: Signature grinding, fee-rate selection, script and address types, and nSequence and locktime conventions each vary from one wallet to the next. While some wallets randomize these, and specific entities may use more than one piece of software, fingerprint-based clustering — both more generally[^moser-narayanan][^kappos], and also specifically in the context of PayJoin[^sabouri] — has thus far proven to be extremely powerful.
+**Wallet software fingerprints** are a special case of the statistical kind: Signature grinding, fee-rate selection, script and address types, and `nSequence` and `nLockTime` conventions each vary from one wallet to the next. While some wallets randomize these, and specific entities may use more than one piece of software, fingerprint-based clustering — both more generally[^moser-narayanan][^kappos], and also specifically in the context of PayJoin[^sabouri] — has thus far proven to be extremely powerful.
 
 In principle, this can be mitigated by the Sisyphean task of making all wallets behave the same, but this problem is pretty widespread, and while fixing it is a necessary precondition for clustering resistance, it isn't sufficient for addressing the concern, since wallet fingerprints aren't the only dimensions along which clusters can be compared for similarity.
 
