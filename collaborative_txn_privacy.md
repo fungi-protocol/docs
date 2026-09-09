@@ -63,7 +63,7 @@ In the example above, although CIOH is falsified, the amounts strongly suggest o
 
 ## Two-party PayJoin
 
-The other main form a two-party transaction can take is a PayJoin,[^p2ep][^bip79][^bip78][^bip77] which consists of a single payment connecting the sender's sub-transaction to the receiver's, with the sender's surplus covering the receiver's sub-transaction's funding deficit.
+The other main form a two-party transaction can take is a PayJoin.[^p2ep][^bip79][^bip78][^bip77] Unlike the independent, balanced sub-transactions in the preceding example, the sender's sub-transaction has a surplus that covers the receiver's deficit. This imbalance between the two sub-transactions is the payment.
 
 The following illustrates a single payment from Alice to Bob, but Bob also contributes one of his own inputs alongside Alice's:
 
@@ -85,15 +85,13 @@ flowchart LR
 
 *Here, Alice pays Bob 0.5: Bob's 0.6 input grows into a 1.1 output. The payment amount appears nowhere on-chain, and the ownership coloring is of course not part of the on-chain data either.*
 
-CIOH, seeing two inputs, wrongly concludes one owner. There's no single unambiguous interpretation: Looking at just this transaction in isolation, an analyst cannot be sure which inputs are Alice's, which output is the real payment, or even that a PayJoin occurred at all rather than an ordinary two-input spend.
-
 For privacy, a somewhat teleological but more general definition of PayJoin is a collaborative transaction that should be **indistinguishable from an ordinary single-party transaction**. The **unnecessary-input heuristics** flag an input when the remaining inputs could already fund the outputs and fees; such an input may reveal that another participant contributed it.[^uih-adamisz][^uih-ghesmati] If collaborative transactions were sufficiently common, naive application of CIOH would quickly lead to cluster collapse, forcing a more nuanced approach to clustering.
 
-With only two parties, there are only a few interpretations, namely the different ways of assigning inputs and outputs to sub-transactions attributed to Alice and Bob separately. The typical uncertainty is therefore on the order of a few bits to an external observer, even when looking only at the transaction in isolation and ignoring its context.[^payjoin-entropy]
+CIOH, seeing two inputs, would wrongly attribute them to a single owner. There's no single unambiguous interpretation: Looking at a transaction like the example in isolation, an analyst cannot be sure which inputs are Alice's, which output is the real payment, or even that a PayJoin occurred at all rather than an ordinary two-input spend.
 
-The next few sections discuss extensions to two-party PayJoin, but bear in mind that as they're more difficult to analyze, the same concerns apply even more to the two-party case.
+With only two parties, there are only a few interpretations, namely the different ways of assigning inputs and outputs to sub-transactions attributed to Alice and Bob separately. The typical uncertainty is therefore on the order of a few bits to an external observer, even when looking only at the transaction in isolation and ignoring its context.[^payjoin-entropy] The next few sections discuss extensions to two-party PayJoin, but bear in mind that as they're more difficult to analyze, the same concerns apply even more to the two-party case.
 
-Additionally, a two-party PayJoin cannot provide privacy from the counterparty. Each participant can eliminate their own inputs and outputs from consideration, which entails that everything else is attributable to the only other party. Privacy within a transaction requires three or more parties.
+More generally, a two-party PayJoin inherently cannot provide privacy from the counterparty. Each participant can eliminate their own inputs and outputs from consideration, which entails that everything else is attributable to the only other party. Privacy within a transaction requires three or more parties.
 
 ## Many senders, one receiver (NS1R)
 
@@ -140,11 +138,11 @@ flowchart LR
 
 *Alice, Bob and Carol pay 0.2, 0.3 and 0.7 respectively; Dave consolidates the payments with a 0.4 input of his own. None of the payment amounts appear on-chain.*
 
-This allows more payments to be consolidated into a single receiver output, so it's cheaper than paying separately. There's now also a limited form of counterparty privacy: The receiver, seeing a pile of inputs, cannot always be sure which input belongs to which sender, giving the senders some plausible deniability.
+This allows more payments to be consolidated into a single receiver output, so it's cheaper than paying separately.
 
-The receiver still learns each sender's change output, because it knows each sender's payment amount and can read off what is left over. The senders gain a little cover against outsiders while handing the receiver a map of their remaining coins.
+Counterparty privacy depends on how the transaction is constructed. In the experimental NS1R implementation,[^ns1r] each sender supplied a pre-signed transaction to the receiver, revealing which inputs and change outputs belonged to that sender. If transaction construction conceals attribution, the receiver can still use its knowledge of each sender's payment amount to test possible input and change-output assignments. This can narrow the possibilities, and may identify a sender's change output, but does not by itself guarantee a unique assignment.
 
-This structure can't really hide much more than that: The change outputs will likely still link, and as the number of senders grows, the receiver must consolidate more aggressively to leverage the savings — which is itself a detectable fingerprint. Avoiding it means foregoing the fee savings and splitting the received funds into several outputs of a smaller magnitude to better match the distribution of the change outputs. Unfortunately, this in turn creates another liability: Spending sibling outputs of the same transaction together, in addition to being wasteful, is a very unusual pattern, and it should also be avoided if privacy is to be preserved.
+This structure can't really hide much more than that: The change outputs will likely still link, and as the number of senders grows, the receiver must consolidate more aggressively to leverage the savings — which is itself a detectable fingerprint. Avoiding it means foregoing the fee savings and splitting the received funds into several outputs of a smaller magnitude to better match the distribution of the change outputs. Splitting the receiver's funds creates another hazard: Later spending those sibling outputs together, even in a multiparty transaction, is wasteful and potentially more indicative of common ownership than spending non-sibling outputs together. Two independent users participating in one transaction and then independently spending their respective outputs in the same subsequent transaction would arguably require more coincidences.[^siblings]
 
 ## Many senders, many receivers (NSNR)
 
@@ -271,7 +269,7 @@ In principle, this can be mitigated by the Sisyphean task of making all wallets 
 
 ### Social graphs
 
-Turning to the structural features, in subsequent work,[^ns-social] the same authors showed that the vertices of two social graphs can be matched iteratively, starting from relatively small seed matching, which matches some of the vertices of one graph with those of the other.
+Turning to the structural features, in subsequent work,[^ns-social] the same authors showed that the vertices of two social graphs can be matched iteratively, starting from a relatively small seed matching, which matches some of the vertices of one graph with those of the other.
 
 This builds on the sparseness exploited by the previous work. Here, a "dimension" can be thought of roughly as whether some target vertex is related to some other specific vertex. In a social graph, most nodes will be readily identifiable based on the identities of their neighbors. The actual result in the paper is significantly stronger, requiring only a seed of relatively few matched nodes to iteratively propagate the matching along the graphs. Later work by Narayanan et al. generalized this further to link prediction on incomplete graphs.[^ns-linkpred]
 
@@ -394,17 +392,25 @@ flowchart LR
 
 *Each match extends the frontier: Dave's vertex is the remaining neighbor of Bob's, and Erin's is the remaining neighbor of Carol's. The graphs don't need to agree exactly — the vertex with no counterpart in the auxiliary graph simply remains unmatched.*
 
-Suppose the adversary starts with an incomplete clustering of Bitcoin transaction outputs. While the clusters do link together some outputs, because it's incomplete for every user, there may be several clusters. So long as the adversary still hasn't collected enough evidence to conclude that several clusters belong to the same user, that user still enjoys pseudonymity.
+Suppose the adversary starts with an incomplete clustering of Bitcoin transaction outputs. While the clusters do link together some outputs, because it's incomplete, there may be several clusters per actual user. So long as the adversary still hasn't collected enough evidence to conclude that several clusters belong to the same user, that user still enjoys pseudonymity.
 
 This adversary doesn't just apply CIOH blindly. When it's first observed, a transaction suspected to be a PayJoin, for example, will have four or more related clusters. Each entity will be represented by at least one input-side cluster and at least one output-side cluster. Naive CIOH would compel merging of all of the input clusters, and change identification may additionally link it to one of the outputs. Subsequent transactions will in turn link to those. The ensuing cluster collapse will of course be avoided by any competent adversary.
 
-Starting with the transaction graph, where coins are vertices, let clusters be represented by undirected edges connecting the linked coins. By edge contraction on these edges, a sort of graph minor[^minor-nitpick] can be obtained from a given clustering, where all of the coins of a particular cluster are fused into just one vertex representing the cluster itself. The residual edges of this now multigraph correspond to transfers of Bitcoin.
+Starting with the transaction graph, where coins are vertices, let clusters be represented by undirected edges connecting the linked coins. By edge contraction on these edges, a graph minor analogue[^minor-nitpick] can be obtained from a given clustering, where all of the coins of a particular cluster are fused into just one vertex representing the cluster itself. The residual edges of this multigraph correspond to transfers of Bitcoin between clusters, so those relationships remain available for analysis.
 
-Reid and Harrigan's paper[^reid-harrigan], in its discussion of clustering, introduced the notion of a user network, where vertices are users and edges represent the flows of Bitcoin between them. If the clustering is complete, and each user can be identified with just one node on the contracted graph, that is the user network. Otherwise, when the clustering is incomplete, this cluster graph is better thought of as a pseudonym graph rather than a user network. This is a social network per Shmatikov and Narayanan's definition.[^multigraph-nitpick] The statistical feature distributions of clusters reduce to attributes on the vertices, and both those and the structural features can inform the edge attributes.
+Reid and Harrigan's paper[^reid-harrigan], in its discussion of clustering, introduced the notion of a user network, where vertices are users and edges represent the flows of Bitcoin between them. If the clustering is complete, and each user can be identified with just one node on the contracted graph, that is the user network. Otherwise, when the clustering is incomplete, this cluster graph is better thought of as a pseudonym graph rather than a user network. This is a social network per Shmatikov and Narayanan's definition.[^multigraph-nitpick] The statistical feature distributions of clusters reduce to attributes on the vertices, and both those and the structural features can inform the edge attributes used in their algorithm.
 
-To apply Narayanan and Shmatikov's algorithm, more than one social graph is required, but the kinda sorta graph minor that can be obtained by contraction is just one such graph. But we could first partition the cluster-annotated coin graph — for example, by leveraging the notion of time baked into the blockchain and splitting it into epochs. Contracting each subgraph separately, each corresponding graph minor would present as a somewhat different view of the pseudonym graph. The more active a particular user, the more likely they are to lose pseudonymity, since more data will leak. Furthermore, the more consistent their economic activity, the more stable their representation will be in the resulting graphs, because more of their relationships will be apparent. Every pair of such graphs is then, given just a few seeds (clusterings across epochs), susceptible to deanonymization using the propagation algorithm introduced by Narayanan and Shmatikov.
+Narayanan and Shmatikov's propagation algorithm starts with two graph views and a seed correspondence between some of their vertices. Contracting the entire coin graph gives us only one view. To obtain several, we could first partition the cluster-annotated coin graph, for example into epochs, and then contract each subgraph separately. Each resulting graph minor analogue would then present a view of the pseudonym graph over a different period.
 
-Although a proliferation of pseudonyms may limit the effectiveness of this approach for any particular run of the propagation algorithm, high confidence links obtained by this method can feed into other clustering heuristics. Additionally, there are more ways of partitioning the transaction graph than just by epoch. A more optimal partitioning would be, as a very crude analogy, the "opposite" of expander decomposition: Instead of identifying a sparse cut that decomposes the graph into several components, each of which is a well-connected expander, the adversary decomposes the cluster graph along a high-ambiguity cut — a boundary where many clusters seemingly connect to many others, as CoinJoins tend to produce — such that each resulting component is relatively sparse, having excluded that densely connected region, and then matches these components against those of another such partition.
+Existing clustering supplies the seed correspondence. If a coin in one epoch is already linked to a coin in another, their cluster vertices form a seed pair. Address reuse, heuristics applied to boundary transactions, or auxiliary information can supply such links.
+
+The more active a user is, the more data they expose. Consistent economic relationships can also make their neighborhood recognizable across epochs. Where the views preserve enough of this structure and the adversary has suitable seeds, Shmatikov and Narayanan's graph matching algorithm can propagate clustering information beyond local heuristics.
+
+A proliferation of pseudonyms may limit any one run of the propagation algorithm, but high-confidence matches can still inform other clustering heuristics. Epochs are also only one way to partition the coin graph.
+
+Another approach would place the boundaries at high-ambiguity regions, where many clusters seemingly connect to many others, as CoinJoins tend to produce. Excluding those densely connected regions can leave components in which each cluster has relatively few neighbors. The adversary can then compare components from different partitions.
+
+As a crude analogy, this is the “opposite” of expander decomposition: Instead of making sparse cuts that leave well-connected components, the adversary makes dense, high-ambiguity cuts that leave sparse components whose relationships are easier to match.
 
 Some clustering must already have been produced by another technique for this to work, hence the starting assumption that the clustering is partial. It both supplies the annotations that make contraction possible in the first place and provides the seed correspondence from which graph matching can propagate.
 
@@ -437,7 +443,7 @@ flowchart LR
 
 *The equal outputs are interchangeable, but the change outputs remain linked to the inputs by their amounts, and Bob's two inputs are linked to each other by the consolidation forced by a minimum denomination requirement.*
 
-Because no payments are made, the peers don't need to have any economic relationship to each other. This means they can be chosen randomly from a broader population rather than from one's counterparties. While it may seem that this already confounds social-graph analysis, this type of CoinJoin is readily identifiable. A cautious adversary can decline to apply CIOH within it, leaving additional cluster pseudonyms, while still matching the implied user graphs on either side.[^ns-social] Later payments continue to expose recurring economic relationships and therefore community structure.
+Because no payments are made, the peers don't need to have any economic relationship to each other. This means they can be chosen randomly from a broader population rather than from one's counterparties. While it may seem that this already confounds social-graph analysis, this type of CoinJoin is readily identifiable. A cautious adversary can decline to apply CIOH within it, leaving additional cluster pseudonyms, while still matching the implied user graphs on either side.[^ns-social] Observable flows between apparent clusters elsewhere in the graph can still expose recurring economic relationships and therefore community structure.
 
 What it can do is introduce uncertainty about the origins of a coin, limiting the ability to perform input-side clustering for any subsequent transactions as well. This slows the rate at which certainty can be gained about clustering structures, but it isn't a comprehensive or robust defense, and over time, such structures will generally be revealed.[^danezis][^troncoso]
 
@@ -520,9 +526,9 @@ The Boltzmann link probability matrix[^boltzmann] and Maurer et al.'s sub-transa
 
 What exactly makes a partition a valid sub-transaction mapping is whether or not the sub-transaction is deemed plausible. In Maurer et al., the values of the inputs and the outputs must exactly cancel out, which isn't sufficiently general for real-world analyses. Boltzmann casts a wider net by allowing these to vary somewhat, accounting for fees (including JoinMarket maker fees).
 
-In these models, even if the number of coins and therefore partitions is large, if the probabilities over the partitions are far from uniform, this amounts to relatively little privacy. This is typically quantified in terms of entropy.[^diaz][^serjantov-danezis][^syverson][^scroll-intersection]
+A large number of possible partitions does not by itself imply much privacy: Most of the probability may be concentrated on just a few of them. Entropy quantifies the uncertainty in this distribution, measured in bits.[^diaz][^serjantov-danezis][^syverson][^scroll-intersection]
 
-When a sub-transaction mapping is underdetermined, i.e. there's more than one way to link inputs to outputs in separate sub-transactions, then there's ambiguity as to how to link the coins of those mutually exclusive interpretations. This can be achieved overtly by choosing output values to generate many possibilities.[^radix]
+When a sub-transaction mapping is underdetermined, more than one assignment of inputs and outputs to separate sub-transactions remains possible. If several assignments have comparable probabilities, the adversary needs further information to distinguish them. The entropy of the distribution implies a lower bound on how much additional information is required. Output values can be deliberately chosen to create many possible assignments.[^radix]
 
 ```mermaid
 flowchart LR
@@ -554,9 +560,9 @@ flowchart LR
 
 *With values chosen to be underdetermined, three distinct mappings balance: The 0.7 output can be funded by 0.3 + 0.4, by 0.2 + 0.5, or by 0.1 + 0.2 + 0.4, with the remaining inputs funding the 0.8 output. Across these readings — and the single-owner one — no input is linked to either output.*
 
-Alternatively, the assumption of the model itself can be invalidated. This is exactly the line of reasoning from the discussion leading up to net settlement transactions. There's no technical reason why net settlements between economically related users shouldn't also be possible within such a protocol that also lets strangers be parties to the same transaction. And indeed, economically related users who settle in this way can also better conceal their business relationships when they do that in the context of a broader transaction.
+Alternatively, the assumption that each participant's sub-transaction is balanced (allowing for fees), can be invalidated. As discussed above, net settlement allows one participant's surplus to cover another's deficit while the transaction as a whole still balances. There's no technical reason why economically related users couldn't settle within a protocol that also admits strangers to the same transaction. This will also conceal their business relationships better than a purely net settlement transaction structure.
 
-Unfortunately, something that's omitted by both models but which should hopefully be apparent based on the above, is that the adversary can incorporate information from the surrounding context of the graph to its sub-transaction analysis — not just the input and output values. So while net settlement can improve the resistance to analysis, as can the overt structural ambiguity of transactions with carefully chosen output values, they are no panacea.
+The adversary can also incorporate statistical features, structural relationships in the surrounding graph, and auxiliary information into its sub-transaction analysis. These can change the plausibility of a mapping which only accounts for the amounts. Neither variant of the model, as originally described, incorporates these additional observables. For this reason, neither net settlement nor overtly ambiguous CoinJoins can offer a comprehensive solution to these problems.
 
 ## Taking provenance into account
 
@@ -567,15 +573,15 @@ However, it can also decay rather quickly. Suppose the adversary successfully de
 - The coins of that user are eliminated as linking candidates when attempting to deanonymize the target user. This is an additive decay of privacy.
 - In addition, the eliminated coins form the boundary between regions of the transaction graph, fracturing it. This is a multiplicative decay of privacy, and the adversary can make progress at an exponential rate when this is the case.
 
-Merely quantifying the entropy at a point in time doesn't account for how it may decay over time. And even if it did, it's impossible to account for any private information the adversary may have.
+An entropy estimate based on on-chain observations measures uncertainty under the information available to that particular observer. It cannot represent the uncertainty remaining for an adversary with additional information, nor how quickly that uncertainty could shrink.
 
-For example, a chain analysis vendor with access to KYC information may have sufficiently granular data to be operating in the exponential decay regime for graphs which seemingly imply high entropy.
+For example, a chain analysis vendor with KYC information may already be able to separate regions of a graph that still appears highly ambiguous to an outside observer. Users therefore need a safety margin chosen for the auxiliary information their threat model allows the adversary to have.
 
 ## Robust connectivity
 
 If the CoinJoin graph is *robustly connected*[^flow], then no small cut separates any output from the mass of its candidate origin coins. Stated differently, every output is connected to its candidate origins by multiple disjoint paths.
 
-This safety margin delays the brittle cliff edge of exponential decay, extending the duration of the additive decay regime by requiring the adversary to deanonymize a much larger proportion of users before divide-and-conquer tactics start coming into play.
+This redundancy forestalls the cliff of exponential decay, where privacy becomes much more brittle, extending the duration of the linear decay regime by requiring the adversary to deanonymize a much larger proportion of users before divide-and-conquer tactics start coming into play.
 
 But when two post-CoinJoin outputs are linked, on-chain or otherwise, this makes **intersection attacks**[^goldfeder][^scroll-intersection] possible. In such attacks, we take the candidate origins of these now-linked coins and check for any overlaps.
 
@@ -638,7 +644,7 @@ flowchart LR
 
 *Alice's spend links one output from each class. Tracing each input back — from spent output, through its creating CoinJoin, and to the pre-CoinJoin input clusters — gives the two antecessor sets, highlighted in yellow and red. These overlap only at Alice's cluster, highlighted as the one node belonging to both: The intersection identifies her, and by elimination also narrows the remaining outputs' candidate sets: CoinJoin 1's to Bob or Carol, CoinJoin 2's to Dave or Erin.*
 
-A successful intersection makes progress at a rate that is exponential in the number of observations available to the adversary. If the set is of size $n$, then $O(\log n)$ observations — each intersection cutting the candidate set down by a constant factor — may suffice to pinpoint a single element, whereas striking candidates off of the list one at a time in a naive process of elimination may require $O(n)$ observations.
+If each additional intersection reduces the remaining candidate set by a constant factor, its size falls exponentially with the number of observations. Starting from $n$ candidates, a process of elimination that rules out one candidate at a time will take $O(n)$ time to narrow down a single candidate, but if intersections are used to eliminate them then $O(\log n)$ observations may suffice for successful deanonymization.
 
 This holds unless the size of the symmetric difference between antecessor sets is bounded by a constant — i.e. the antecessor sets of linked coins are very similar — because then the size of the intersection is similar to the size of the intersected sets. This attack is powerful because that similarity is rare in practice: The intersection will usually be significantly smaller than the sets themselves.
 
@@ -774,7 +780,7 @@ flowchart LR
 
 *The same transactions from the ATM's point of view: After CoinJoin 3, the two outputs are equivalent — whichever one is deposited has plausible paths back to the dispensed coin, directly through CoinJoin 3 or via Bob through CoinJoins 1 and 2 — so the ATM cannot tell Alice returning from either Bob or Carol.*
 
-Repeated CoinJoins can spread Alice's coins' provenance fingerprint to other users' coins while spreading their features to hers. This allows her to build up to a quantifiable anonymity set.
+Repeated CoinJoins can spread Alice's coins' provenance-related features to other users' coins while spreading their features to hers. This allows her to build up to a quantifiable anonymity set.
 
 ```mermaid
 flowchart LR
@@ -880,15 +886,17 @@ flowchart LR
   linkStyle 0,2,3,4,5,7,8,13,15,16,21,23,24,25,27,28,29,30,32,33,34,35 stroke:#5778a4,stroke-width:4px
 ```
 
-*Continuing the preceding graph, Bob and Dave spend marked outputs along separate branches. As more marked outputs circulate, more branches can spread Alice's deep feature. In Alice's next four-input CoinJoin, Bob's and Dave's inputs also descend from her original coin; only Grace's does not.*
+*Continuing the preceding graph, Bob and Dave spend marked outputs along separate branches. As more marked outputs circulate, more branches can spread Alice's provenance features. In Alice's next four-input CoinJoin, Bob's and Dave's inputs also descend from her original coin; only Grace's does not.*
 
-Let's call provenance-specific structural features deep features. When spending more than one coin, if the coins have similarly distributed deep features, then they'll have similar antecessor sets.
+When spending more than one coin, the similarity of these provenance features matters because it determines how much their antecessor sets overlap.
 
-To quantify an anonymity set size, Alice can count the inputs belonging to other users that already share her coins' deep features,[^proximity] i.e. inputs that counterfactually trace back to her origin coins. Many such counterfactual paths imply that intersected candidate sets shrink only at a linear rate, because Alice's coins would also be in the intersections arising from post CoinJoin linking of coins that have nothing to do with her.
+To quantify an anonymity set size, Alice can count the inputs belonging to other users that already share her coins' provenance features,[^proximity] i.e. inputs that counterfactually trace back to her origin coins. Many such counterfactual paths imply that intersected candidate sets shrink only at a linear rate, because Alice's coins would also be in the intersections arising from post CoinJoin linking of coins that have nothing to do with her.
 
 This is the most conservative notion of on-chain privacy described in this document. CoinJoin transactions that have the structural properties discussed — where peers are chosen so as to satisfy these robustness properties — are required to frustrate a real-world deanonymization adversary. Without them, the information required to deanonymize is often revealed in the transaction graph itself, which is already very harmful for privacy, fungibility, and censorship resistance. And this is compounded — perhaps catastrophically — by many other privacy loss vectors outside the graph, such as blockchain indexing services for light clients, KYC information, leaks from data breaches, and transport level information like IP addresses.
 
 Note, however, that this still requires that the other ATM users also CoinJoin; otherwise, Alice's history will still be unique. Even if she tries to obscure this using "normal looking" transactions, the ATM could still distinguish Alice based on the fact that these transactions descend from the CoinJoin subgraph, simply because those of the other users do not. Determining whether she is the only such user is something that can be judged based on evidence like temporal patterns (correlations or periodic activity). Such patterns are more easily discernible when there are clearly delineated CoinJoin-using and non-CoinJoin-using populations in the transaction graph as a whole.
+
+The adversary can combine amount-based analysis, wallet fingerprints and other statistical features, graph matching, link prediction, intersection attacks, and auxiliary information. A link inferred from one source can change the interpretation of another. These analyses need not run as separate stages, and the auxiliary information may come from public observations, the adversary's own transactions, or private records.
 
 ## Censorship resistance vs. privacy tradeoffs and complementarity
 
@@ -902,17 +910,17 @@ This isn't zero sum. The two ends then reinforce each other. The censorship-resi
 
 Multiparty transactions that don't overtly optimize for an underdetermined sub-transaction mapping can still provide ambiguity, with their susceptibility to censorship based on public information largely reduced to their proximity to the overtly privacy-enhancing ones.
 
-If this structural feature spectrum is realized on-chain, the distribution of deep features labeling a user's output has a better chance of matching the deep feature distributions of more superficially similar but unrelated coins. Superficially similar coins are those with which it shares statistical features (like value distribution or wallet software fingerprints) or more general structural features (e.g. size of the containing transaction).
+If this structural feature spectrum is realized on-chain, the distribution of provenance features labeling a user's output has a better chance of matching the provenance feature distributions of more superficially similar but unrelated coins. Superficially similar coins are those with which it shares statistical features (like value distribution or wallet software fingerprints) or more general structural features (e.g. size of the containing transaction).
 
 Recall that sparseness is a requirement for Narayanan and Shmatikov's results. In today's transaction graph, cluster features — both statistical, and more importantly, structural — are very likely to be unique because there doesn't exist any wallet software that deliberately blends the structural features. Wallet fingerprints and other statistical features of clusters might not be sparse on their own. But if the social network structure is recoverable from the transaction graph, that will be enough for the adversary to deanonymize most of the graph. Auxiliary information like KYC data might be the basis of such a seed, but just high degree nodes on the social graph, such as well-known mining pools, exchanges, and payment processors may suffice.
 
-Sufficiently ambiguous collaborative transactions would produce coins that share the *sum* of their inputs' deep feature vectors, blending together their fingerprints. This undermines sparseness by construction. The more widely these sums spread, the less sparse the feature vectors of all coins become. For the transaction graph structure to actually be connected in this way requires deliberate effort, but there's no fundamental barrier to this occurring.
+Sufficiently ambiguous collaborative transactions would produce coins that share the *sum* of their inputs' provenance feature vectors, blending together their fingerprints. This undermines sparseness by construction. The more widely these sums spread, the less sparse the feature vectors of all coins become. For the transaction graph structure to actually be connected in this way requires deliberate effort, but there's no fundamental barrier to this occurring.
 
-This suggests that some of today's widely held — but often misleading — beliefs or intuitions about on-chain privacy and fungibility would be more accurate under two conditions: if such mixing of deep features were pervasive, and if the boundary between such transactions and "normal" transactions were obscured by a network of covert transactions, none of them completely disconnected from the CoinJoin graph.
+This suggests that some of today's widely held — but often misleading — beliefs or intuitions about on-chain privacy and fungibility would be more accurate under two conditions: if such mixing of provenance features were pervasive, and if the boundary between such transactions and "normal" transactions were obscured by a network of covert transactions, none of them completely disconnected from the CoinJoin graph.
 
-In other words, imagine a world where some users CoinJoin and construct transaction graphs with sufficiently many disjoint counterfactual paths, as discussed above, and other users engage in net settlement transactions or two-party PayJoins. Crucially, all of these subgraphs are intertwined. In that world, the combinatorial explosion of graph-based features, which today can reveal a lot of information to the adversary, would be rendered mostly inert. By construction, this transaction graph would no longer satisfy the conditions for Narayanan and Shmatikov's algorithms.
+In other words, imagine a world where some users CoinJoin and construct transaction graphs with sufficiently many disjoint counterfactual paths, as discussed above, and other users engage in net settlement transactions or two-party PayJoins. Crucially, all of these subgraphs are intertwined. In that world, the combinatorial explosion of graph-based features, which today can reveal a lot of information to the adversary, would be rendered mostly inert. By construction, such a transaction graph will not satisfy the sparseness conditions which are required for applying Shmatikov and Narayanan's approach.
 
-Until such time, be skeptical of claims that PayJoin or even CoinJoin provide privacy against a competent adversary — especially if it's well funded and is widely known to have access to a trove of high-quality auxiliary information. And even if this does become a reality, please remember that it wouldn't address the auxiliary information concern, nor thwart any as-of-yet undiscovered analyses that perhaps exploit some subtler leaks.
+Until such time, be skeptical of claims that PayJoin or even CoinJoin provide privacy against a competent adversary — especially if it's well funded and is widely known to have access to a trove of high-quality auxiliary information. And even if this does become a reality, please remember that it wouldn't address the auxiliary information concern, nor thwart any as-of-yet undiscovered analyses that perhaps exploit some subtler leaks. And bear in mind that this depends not just on software, but a critical mass of adoption and assimilation of such privacy enhanced transaction graph structures into the rest of the Bitcoin ecosystem in order to have a meaningful impact on fungibility.
 
 [^cioh-wp]: The common-input-ownership observation appears in passing in the Bitcoin whitepaper: S. Nakamoto, [*Bitcoin: A Peer-to-Peer Electronic Cash System*](https://bitcoin.org/bitcoin.pdf)
 
@@ -951,6 +959,8 @@ Until such time, be skeptical of claims that PayJoin or even CoinJoin provide pr
 [^boltzmann]: LaurentMT, [*Boltzmann*](https://gist.github.com/LaurentMT/d361bca6dc52868573a2), specifically the link-probability matrix.
 
 [^ns1r]: rust-payjoin, [PR #923 (removal of the experimental NS1R implementation, with status discussion)](https://github.com/payjoin/rust-payjoin/pull/923)
+
+[^siblings]: This concern is not entirely hypothetical; it applies to some CoinJoin wallets and Electrum's “multiple change addresses” mode.
 
 [^maxwell]: G. Maxwell, [*CoinJoin: Bitcoin privacy for the real world*](https://bitcointalk.org/index.php?topic=279249)
 
