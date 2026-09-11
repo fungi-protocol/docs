@@ -18,6 +18,9 @@
         buildPhase = ''
           # mmdc writes a chromium profile under $HOME.
           export HOME=$(mktemp -d)
+          # mermaid measures text with getBBox and rejects a zero-sized box, so
+          # the build sandbox has to carry a font of its own.
+          export FONTCONFIG_FILE=${pkgs.makeFontsConf { fontDirectories = [ pkgs.dejavu_fonts ]; }}
           mdbook build -d $out
         '';
 
