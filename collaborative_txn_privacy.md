@@ -582,6 +582,14 @@ For example, a chain analysis vendor with KYC information may already be able to
 If the CoinJoin graph is *robustly connected*[^flow], then no small cut separates any output from the mass of its candidate origin coins. Stated differently, every output is connected to its candidate origins by multiple disjoint paths.
 
 This redundancy forestalls the cliff of exponential decay, where privacy becomes much more brittle, extending the duration of the linear decay regime by requiring the adversary to deanonymize a much larger proportion of users before divide-and-conquer tactics start coming into play.
+<div class="chart-src f32" role="img" aria-label="Two CoinJoin graphs of thirty-two wallets under the same ten deanonymizations.">
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="src/figures/figure-32-dark.svg">
+  <img src="src/figures/figure-32-light.svg" alt="Two CoinJoin graphs of thirty-two wallets under the same ten deanonymizations: mixing sheds one candidate per strike; merges through a single coin collapse to one.">
+</picture>
+</div>
+
+*The same ten peers, deanonymized in the same order, in both graphs.*
 
 But when two post-CoinJoin outputs are linked, on-chain or otherwise, this makes **intersection attacks**[^goldfeder][^scroll-intersection] possible. In such attacks, we take the candidate origins of these now-linked coins and check for any overlaps.
 
