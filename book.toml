@@ -15,6 +15,10 @@ after = ["links", "graphviz"]
 command = "mdbook-katex"
 after = ["links"]
 
+[preprocessor.figures]
+command = "python3 contrib/figures.py"
+after = ["links", "graphviz", "mermaid", "katex"]
+
 [output.html]
 additional-css = ["theme/diagrams.css"]
 git-repository-url = "https://github.com/fungi-protocol/docs"
