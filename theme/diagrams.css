@@ -67,3 +67,36 @@ html:is(.coal, .navy, .ayu) .mdbook-graphviz-output [fill="black"] {
 html:is(.coal, .navy, .ayu) .mdbook-graphviz-output text:not([fill]) {
     fill: #b7b7b7;
 }
+
+/* The build embeds both palettes as inline SVG. GitHub keeps the source
+   picture; book themes select a palette without fetching another image. */
+.chart-src {
+    margin: 1rem auto;
+}
+
+.chart-src svg {
+    display: block;
+    max-width: 100%;
+    height: auto;
+}
+
+.chart-dark {
+    display: none;
+}
+
+@media screen {
+    html:is(.coal, .navy, .ayu) .chart-dark {
+        display: block;
+    }
+
+    html:is(.coal, .navy, .ayu) .chart-light {
+        display: none;
+    }
+}
+
+/* Print the light palette even when the reader selected a dark book theme. */
+@media print {
+    .chart-src {
+        break-inside: avoid;
+    }
+}
