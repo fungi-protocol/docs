@@ -67,3 +67,36 @@ html:is(.coal, .navy, .ayu) .mdbook-graphviz-output [fill="black"] {
 html:is(.coal, .navy, .ayu) .mdbook-graphviz-output text:not([fill]) {
     fill: #b7b7b7;
 }
+
+/* The figure ships as light and dark files. The source view renders them
+   through a picture that follows the system preference; the book paints the
+   same files as a background that follows the book theme, and keeps the
+   picture hidden so the svg is not fetched twice. */
+.chart-src {
+    display: block;
+    max-width: 100%;
+    margin: 1rem auto;
+    background: no-repeat center/100% 100%;
+}
+
+.chart-src picture {
+    display: none;
+}
+
+.chart-src.f16 {
+    aspect-ratio: 736 / 762;
+    background-image: url(../figures/figure-16-light.svg);
+}
+
+.chart-src.f32 {
+    aspect-ratio: 864 / 1120;
+    background-image: url(../figures/figure-32-light.svg);
+}
+
+html:is(.coal, .navy, .ayu) .chart-src.f16 {
+    background-image: url(../figures/figure-16-dark.svg);
+}
+
+html:is(.coal, .navy, .ayu) .chart-src.f32 {
+    background-image: url(../figures/figure-32-dark.svg);
+}
