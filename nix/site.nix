@@ -28,6 +28,10 @@
       };
     in
     {
+      checks = {
+        inherit site;
+      };
+
       packages = {
         inherit site;
         default = site;

@@ -2,22 +2,21 @@ name: Pages
 on:
   push:
     branches: [main]
-  pull_request:
 permissions:
   contents: read
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: DeterminateSystems/nix-installer-action@3138316df39ed29be04236d7ffc686fa525866aa # v23
       - uses: DeterminateSystems/magic-nix-cache-action@84c0677f58dcedf3b91f8223ce36a9ea5b3c84b7 # v15
-      - run: nix build
+      - run: nix build --no-update-lock-file
       - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
         with:
           path: result
   deploy:
-    if: github.event_name == 'push'
     needs: build
     runs-on: ubuntu-latest
     permissions:
