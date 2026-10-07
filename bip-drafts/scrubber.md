@@ -166,7 +166,7 @@ This data may eventually appear on-chain; revealing it early leaks the spending 
 
 #### MuSig Fields
 
-MuSig2 signing parties neccecarily sit in the same trust scope. An untrusted party that learns the other signing parties’ keys can correlate them with the aggregate key and weaken MuSig’s single-key-spend obfuscation.
+MuSig2 signing parties necessarily sit in the same trust scope. An untrusted party that learns the other signing parties’ keys can correlate them with the aggregate key and weaken MuSig’s single-key-spend obfuscation.
 
 `<keytype>` | PSBT version | BIP |
 --- | --- | --- |
@@ -214,7 +214,7 @@ In cases where multiple untrusting signers are participating in the signing proc
 
 ### Sorting
 
-If signers use different libraries with different serialization implementations, an untrusting party can identify the signer by the order in which they encode fields. To prevent this, the scrubber must sort each map lexigraphically by `key` after it removes sensitive fields.
+If signers use different libraries with different serialization implementations, an untrusting party can identify the signer by the order in which they encode fields. To prevent this, the scrubber must sort each map lexicographically by `key` after it removes sensitive fields.
 
 ### Field transfer sequence
 
