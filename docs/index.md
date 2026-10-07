@@ -2,7 +2,9 @@
 okf_version: "0.2"
 ---
 
-* [Collaborative transaction privacy](collaborative_txn_privacy.md) - Under review in #7.
+# Problem Statement
+
+* [Collaborative transaction privacy](collaborative_txn_privacy.md) - Challenges for privacy in multiparty transaction settings, from PayJoin to CoinJoin.
 
 # Protocol Suite
 
