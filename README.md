@@ -26,7 +26,7 @@ The semi-honest setting can provide some degree of confidentiality, especially a
 
 Overcoming the community analysis concern requires a Sybil resistant, permissionless protocol where peers with no meaningful economic relationship can find each other. This involves an additional *coalition formation* protocol that sets up transaction construction using a market based mechanism.
 
-While it is beneficial for privacy, interacting with strangers in a permissionless protocol invites distruption or attempts are survaillance. For honest peers to be able reliably transact, especially with the unanimity requirement, demands a byzantine fault tolerance from the transaction construction protocol.
+While it is beneficial for privacy, interacting with strangers in a permissionless protocol invites distruption or attempts are surveillance. For honest peers to be able reliably transact, especially with the unanimity requirement, demands a byzantine fault tolerance from the transaction construction protocol.
 
 In the course of a BFT interaction with untrusted peers, a participant may still use the other variants of the protocol to coordinate activity with the subset of peers they do know or trust, for instance by performing net-settlement within a larger BFT CoinJoin.
 
@@ -38,4 +38,4 @@ This body of work has, time and again, shown that misconceptions about privacy i
 
 The fungi protocol suite is designed to make arbitrary transactions possible between mutually consenting but distrusting peers. This means safety, liveness, and unlinkability of protocol messages. Within such a protocol peers are free to pursue whatever outcomes they desire.
 
-Privacy does not simply emerge naturally from collaborative transactions. Peers must actively optimize for that. Optimization involves the use of a cost function, an extension or generalization of the kind used for coin selection. This repository makes specific reccomendations with which the protocols are designed to be compatible. The recommended privacy related terms address Sybil resistance, the transaction structure (for example how output values are chosen in relation to others' input values) and the graph structure.
+Privacy does not simply emerge naturally from collaborative transactions. Peers must actively optimize for that. Optimization involves the use of a cost function, an extension or generalization of the kind used for coin selection. This repository makes specific recommendations with which the protocols are designed to be compatible. The recommended privacy related terms address Sybil resistance, the transaction structure (for example how output values are chosen in relation to others' input values) and the graph structure.

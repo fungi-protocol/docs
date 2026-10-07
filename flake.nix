@@ -18,6 +18,7 @@
         ./nix/preprocessors.nix
         ./nix/site.nix
         ./nix/devshell.nix
+        ./nix/spellcheck.nix
       ];
     };
 }
