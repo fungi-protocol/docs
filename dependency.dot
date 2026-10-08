@@ -1,0 +1,250 @@
+digraph dependency_graph {
+    rankdir=TB;
+    splines=polyline;
+    compound=true;
+    newrank=true;
+    node [fontname=Helvetica, fontsize=12, style=filled, shape=box];
+    edge [fontname=Helvetica, fontsize=10, color="#444444"];
+
+    // ── Node definitions ─────────────────────────────────────────────
+
+    // Goals
+    Fungibility [label="Fungibility", fillcolor="#4A90D9", fontcolor=white];
+    Privacy     [label="Privacy",     fillcolor="#4A90D9", fontcolor=white];
+
+    // Core
+    CoinJoin [label="CoinJoin", fillcolor="#E67E22", fontcolor=white, penwidth=2];
+
+    // ── Trust-model encapsulation ────────────────────────────────────
+    // BFT ⊇ Semi-Honest Protocol ⊇ Honest Protocol.
+    // These are containers grouping top-level concepts, not dependency nodes.
+    subgraph cluster_bft {
+        label="BFT";
+        style=filled; fillcolor="#EAF7EA"; color="#27AE60"; penwidth=2;
+        fontname=Helvetica; fontsize=13; fontcolor="#1a4a1a";
+
+        Market    [label="Market Based",          fillcolor="#27AE60", fontcolor=white];
+        Incentive [label="Incentive Compatible",  fillcolor="#27AE60", fontcolor=white];
+
+        subgraph cluster_semihonest {
+            label="Semi-Honest Protocol\n(metadata privacy required)";
+            style=filled; fillcolor="#D8F0EE"; color="#1A7A7A"; penwidth=2;
+            fontname=Helvetica; fontsize=13; fontcolor="#0d4a4a";
+
+            PrivacyPreservation [
+                label="Privacy Preservation",
+                fillcolor="#27AE60", fontcolor=white
+            ];
+            NetSettle [label="Net Settlement", fillcolor="#27AE60", fontcolor=white];
+
+            subgraph cluster_honest {
+                label="Honest Protocol\n(trusting peers)";
+                style=filled; fillcolor="#FFF0D0"; color="#E6A817"; penwidth=2;
+                fontname=Helvetica; fontsize=13; fontcolor="#6B3A00";
+
+                Batching  [label="Arbitrary Batching", fillcolor="#27AE60", fontcolor=white];
+            }
+        }
+    }
+
+    // Shared protocol components
+    TxStateMachine [
+        label="Tx Construction\nState Machine",
+        fillcolor="#EDE7F6", fontcolor="#2C0080", color="#7B52CC", penwidth=2
+    ];
+
+    // Specs and interfaces
+    PSBTLattice [
+        label="PSBT Lattice Spec",
+        fillcolor="#F5F0FF", fontcolor="#2C0080", color="#7B52CC",
+        penwidth=2, style="filled,dashed", shape=component
+    ];
+    P2PChannel [
+        label="P2P Comms\nChannel",
+        fillcolor="#F5F0FF", fontcolor="#2C0080", color="#7B52CC",
+        penwidth=2, style="filled,dashed", shape=component
+    ];
+    MsgSetReplication [
+        label="Message Set\nReplication",
+        fillcolor="#F5F0FF", fontcolor="#2C0080", color="#7B52CC",
+        penwidth=2, style="filled,dashed", shape=component
+    ];
+
+    // Payment flow interfaces (boxed together)
+    subgraph cluster_payment_flow {
+        label="Payment Flow";
+        style=filled; fillcolor="#F0EEFF"; color="#7B52CC";
+        fontname=Helvetica; fontsize=11; fontcolor="#2C0080";
+        { rank=same; PaymentInit; PaymentConfirm; }
+
+        PaymentInit [
+            label="Payment Initiation\nMessage",
+            fillcolor="#F5F0FF", fontcolor="#2C0080", color="#7B52CC",
+            penwidth=2, style="filled,dashed", shape=component
+        ];
+        PaymentConfirm [
+            label="Payment Confirmation\nMessage",
+            fillcolor="#F5F0FF", fontcolor="#2C0080", color="#7B52CC",
+            penwidth=2, style="filled,dashed", shape=component
+        ];
+    }
+
+    // Coalition Formation — concrete instantiation of Market Based
+    CoalitionFormation [
+        label="Coalition Formation",
+        fillcolor="#D5F0D5", fontcolor="#1a4a1a", color="#27AE60", penwidth=2
+    ];
+
+    // Session Parameters — parameters negotiated in coalition formation
+    SessionParameters [
+        label="Session Parameters",
+        fillcolor="#F5F0FF", fontcolor="#2C0080", color="#7B52CC",
+        penwidth=2, style="filled,dashed", shape=component
+    ];
+
+    // Aggregator Role — role definition in coalition formation
+    AggregatorRole [
+        label="Aggregator Role",
+        fillcolor="#F5F0FF", fontcolor="#2C0080", color="#7B52CC",
+        penwidth=2, style="filled,dashed", shape=component
+    ];
+
+    // Orderbook Mechanism — abstract interface beneath Coalition Formation
+    OrderbookMechanism [
+        label="Orderbook Mechanism",
+        fillcolor="#F5F0FF", fontcolor="#2C0080", color="#7B52CC",
+        penwidth=2, style="filled,dashed", shape=component
+    ];
+
+    // BIP322 Ownership Proof — cryptographic proof mechanism for Orderbook
+    BIP322OwnershipProof [
+        label="BIP322 Ownership\nProof",
+        fillcolor="#F5F0FF", fontcolor="#2C0080", color="#7B52CC",
+        penwidth=2, style="filled,dashed", shape=component
+    ];
+
+    // Final Proposal — outcome of session parameters and aggregator role
+    FinalProposal [
+        label="Final Proposal",
+        fillcolor="#F5F0FF", fontcolor="#2C0080", color="#7B52CC",
+        penwidth=2, style="filled,dashed", shape=component
+    ];
+
+    // Cost Function — cost model for privacy preservation
+    CostFunction [
+        label="Cost Function",
+        fillcolor="#F5F0FF", fontcolor="#2C0080", color="#7B52CC",
+        penwidth=2, style="filled,dashed", shape=component
+    ];
+
+    // Objective Fees — objective function component of cost model
+    ObjectiveFees [
+        label="Objective Fees\n(e.g. fees)",
+        fillcolor="#F5F0FF", fontcolor="#2C0080", color="#7B52CC",
+        penwidth=2, style="filled,dashed", shape=component
+    ];
+
+    // Privacy Metrics — metrics for evaluating privacy preservation
+    PrivacyMetrics [
+        label="Privacy Metrics",
+        fillcolor="#F5F0FF", fontcolor="#2C0080", color="#7B52CC",
+        penwidth=2, style="filled,dashed", shape=component
+    ];
+
+    // Open Gossip — concrete implementation of Orderbook Mechanism
+    OpenGossip [
+        label="Open Gossip",
+        fillcolor="#FDEBD0", color="#E6A817", fontcolor="#333333"
+    ];
+
+    // Listen Advertisements — listening mechanism for Open Gossip
+    ListenAdvertisements [
+        label="Listen Advertisements",
+        fillcolor="#F5F0FF", fontcolor="#2C0080", color="#7B52CC",
+        penwidth=2, style="filled,dashed", shape=component
+    ];
+
+    // Agreement — BFT agreement mechanism
+    Agreement [
+        label="Agreement",
+        fillcolor="#F5F0FF", fontcolor="#2C0080", color="#7B52CC",
+        penwidth=2, style="filled,dashed", shape=component
+    ];
+
+    // Validity Proofs — cryptographic proofs for BFT
+    ValidityProofs [
+        label="Validity Proofs",
+        fillcolor="#F5F0FF", fontcolor="#2C0080", color="#7B52CC",
+        penwidth=2, style="filled,dashed", shape=component
+    ];
+
+    // Leaf implementations (left→right per rank row): BIP77Dir, iroh, Nostr
+    BIP77Dir [label="BIP77 Directory\n(OHTTP)", fillcolor="#D0EEEE", color="#1A7A7A", fontcolor="#333333"];
+    Iroh     [label="iroh",                 fillcolor="#FDEBD0", color="#E6A817", fontcolor="#333333"];
+    Nostr    [label="Nostr",                fillcolor="#FDEBD0", color="#E6A817", fontcolor="#333333"];
+
+    // ── Layer constraints (second axis) ─────────────────────────────
+    { rank=same; Fungibility; Privacy; }
+    { rank=same; Agreement; ValidityProofs; CoalitionFormation; CostFunction; PaymentInit; PaymentConfirm; TxStateMachine; }
+    { rank=same; OrderbookMechanism; AggregatorRole; SessionParameters; ObjectiveFees; PrivacyMetrics; P2PChannel; MsgSetReplication; PSBTLattice; }
+    { rank=same; OpenGossip; BIP322OwnershipProof; FinalProposal; Iroh; Nostr; BIP77Dir; }
+
+    // ── Real edges (grouped by source; ordered left→right per rank rows) ──
+
+    // Goals → Core
+    Fungibility -> CoinJoin;
+    Privacy     -> CoinJoin;
+
+    // CoinJoin → BFT children (Market, Incentive, PrivacyPreservation, NetSettle, Batching)
+    CoinJoin -> Market;
+    CoinJoin -> Incentive;
+    CoinJoin -> PrivacyPreservation;
+    CoinJoin -> NetSettle;
+    CoinJoin -> Batching;
+
+    // BFT children → { CoalitionFormation, CostFunction, Payment Flow, TxStateMachine } (+ Agreement/ValidityProofs)
+    Market    -> CoalitionFormation;
+    Market    -> Agreement;
+    Market    -> ValidityProofs;
+    Incentive -> CoalitionFormation;
+    Incentive -> Agreement;
+    Incentive -> ValidityProofs;
+    PrivacyPreservation -> CostFunction;
+    NetSettle -> PaymentInit [lhead=cluster_payment_flow];
+    NetSettle -> TxStateMachine;
+    Batching  -> TxStateMachine;
+
+    // { CoalitionFormation, CostFunction, Payment Flow, TxStateMachine } → specs/interfaces row
+    CoalitionFormation -> SessionParameters;
+    CoalitionFormation -> AggregatorRole;
+    CoalitionFormation -> OrderbookMechanism;
+    CostFunction -> ObjectiveFees;
+    CostFunction -> PrivacyMetrics;
+    PaymentInit    -> P2PChannel;
+    PaymentConfirm -> P2PChannel;
+    TxStateMachine -> P2PChannel;
+    TxStateMachine -> MsgSetReplication [label="practically", style=dashed];
+    TxStateMachine -> PSBTLattice       [label="by definition"];
+
+    // specs/interfaces row → leaves (BIP77Dir, iroh, Nostr, …)
+    SessionParameters  -> FinalProposal;
+    AggregatorRole     -> FinalProposal;
+    OrderbookMechanism -> BIP322OwnershipProof;
+    OrderbookMechanism -> OpenGossip;
+    P2PChannel        -> Iroh;
+    P2PChannel        -> Nostr;
+    MsgSetReplication -> BIP77Dir [label="OHTTP metadata privacy"];
+    MsgSetReplication -> Iroh;
+    MsgSetReplication -> Nostr;
+
+    // leaves → terminal
+    OpenGossip -> ListenAdvertisements;
+
+    // Fix bottom leaf-rank left→right order (per line 190) so the middle nodes follow
+    OpenGossip -> BIP322OwnershipProof -> FinalProposal -> ObjectiveFees ->
+        PrivacyMetrics -> Iroh -> Nostr -> BIP77Dir [style=invis];
+
+    // Fix specs/interfaces-rank left→right order (per line 189)
+    Agreement -> ValidityProofs -> OrderbookMechanism -> AggregatorRole ->
+        SessionParameters -> P2PChannel -> MsgSetReplication -> PSBTLattice [style=invis];
+}
