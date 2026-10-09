@@ -11,6 +11,7 @@ fileset
 foldl
 fontconfig
 Graphviz
+ipynb
 KaTeX
 lzanini
 mdBook
