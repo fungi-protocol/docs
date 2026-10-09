@@ -1,0 +1,3 @@
+[default.extend-identifiers]
+# Mermaid class for Alice's cluster in the intersection diagram.
+aci = "aci"
