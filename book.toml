@@ -3,6 +3,9 @@ title = "Fungi Protocol Suite"
 language = "en"
 src = "src"
 
+[build]
+create-missing = false
+
 [preprocessor.graphviz]
 command = "mdbook-graphviz"
 after = ["links"]
