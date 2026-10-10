@@ -7,8 +7,9 @@ without their descriptions, so an entry must name a chapter and every
 chapter must have an entry. The
 README is the introduction, and the index, with its descriptions, is the
 contents page to which links to docs/index.md lead. Frontmatter is
-dropped, as mdbook would render it as text. The bundle's other files are
-copied as they are.
+dropped, as mdbook would render it as text; contrib/relink then points
+links to what the book leaves out at the repository. The bundle's other
+files are copied as they are.
 
     python3 book.py ROOT OUT
 """

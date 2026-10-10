@@ -1,13 +1,17 @@
-{ ... }:
+{ inputs, lib, ... }:
 {
   perSystem =
-    { pkgs, mmdc, ... }:
+    { pkgs, mmdc, relink, ... }:
     let
+      repository = "https://github.com/fungi-protocol/docs";
+      # Links out of the book name the revision the site is built from; a
+      # build of a modified tree names the commit it modifies.
+      rev = inputs.self.rev or (lib.removeSuffix "-dirty" (inputs.self.dirtyRev or "main"));
       site = pkgs.stdenvNoCC.mkDerivation {
         name = "fungi-docs";
         src = ../.;
 
-        nativeBuildInputs = [ mmdc ] ++ (with pkgs; [
+        nativeBuildInputs = [ mmdc relink ] ++ (with pkgs; [
           mdbook
           mdbook-graphviz
           mdbook-katex
@@ -22,6 +26,7 @@
           # the build sandbox has to carry a font of its own.
           export FONTCONFIG_FILE=${pkgs.makeFontsConf { fontDirectories = [ pkgs.dejavu_fonts ]; }}
           python3 contrib/book.py . src
+          export MDBOOK_PREPROCESSOR__RELINK__BLOB=${repository}/blob/${rev}
           mdbook build -d $out
         '';
 
