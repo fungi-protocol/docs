@@ -1,3 +1,10 @@
+---
+type: BIP Draft
+title: PSBT Scrubber
+description: Which PSBT fields can be shared with trusted and untrusted parties such that privacy is preserved.
+status: draft
+---
+
 # BIP: XXX Privacy PSBT
 
 ## Abstract
