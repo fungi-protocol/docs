@@ -11,7 +11,11 @@
     "border:1px solid var(--sidebar-active,#4183c4);border-radius:4px;" +
     "background:transparent;color:inherit;opacity:.7}" +
     ".nb-pagination button.active{opacity:1;background:var(--sidebar-active,#4183c4);" +
-    "color:var(--sidebar-bg,#fff);border-color:transparent}";
+    "color:var(--sidebar-bg,#fff);border-color:transparent}" +
+    // print shows every row, so shrink the table to keep its widest rows on the page
+    "@media print{.nb-output tbody tr{display:table-row!important}" +
+    ".nb-output table{font-size:.85em}.nb-output th,.nb-output td{padding:3px 8px}" +
+    ".nb-pagination{display:none}}";
   document.head.appendChild(style);
 
   function paginate(table) {
