@@ -1,6 +1,8 @@
 # Bitcoin and privacy vocabulary
+Blocklace
 blockspace
 CoinJoin
+CoinSwap
 deanonymization
 deanonymize
 CLTV
@@ -13,18 +15,23 @@ HTLCs
 keytype
 locktime
 Merkle
+Merklized
 MuSig
 Payjoin
+permissioned
 permissionless
 preimages
 PSBT
 PSBTs
 pubkeys
 RIPEMD
+Samourai
 scriptSig
 scriptWitness
 sighash
+sneakernet
 taptree
 unlinkability
+unlinkable
 UTXO
 xpub
