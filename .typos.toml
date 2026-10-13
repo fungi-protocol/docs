@@ -1,3 +1,7 @@
+[default.extend-identifiers]
+# Author of The Byzantine Generals Problem.
+Pease = "Pease"
+
 [default.extend-words]
 # Groth16, the proof system named after Jens Groth.
 Groth = "Groth"
