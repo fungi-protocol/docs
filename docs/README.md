@@ -1,5 +1,6 @@
 ---
 type: Readme
+status: stable
 description: The mdbook these chapters form, its introduction and its table of contents.
 ---
 

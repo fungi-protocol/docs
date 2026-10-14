@@ -6,10 +6,10 @@ headings become the parts of SUMMARY.md and its entries the chapters,
 without their descriptions, so an entry must name a chapter and every
 chapter must have an entry. The
 README is the introduction, and the index, with its descriptions, is the
-contents page to which links to docs/index.md lead. Frontmatter is
-dropped, as mdbook would render it as text; contrib/relink then points
-links to what the book leaves out at the repository. The bundle's other
-files are copied as they are.
+contents page to which links to docs/index.md lead. Frontmatter is checked
+and then dropped, as mdbook would render it as text; contrib/relink then
+points links to what the book leaves out at the repository. The bundle's
+other files are copied as they are.
 
     python3 book.py ROOT OUT
 """
@@ -17,16 +17,55 @@ import argparse
 import posixpath
 import re
 import shutil
+from datetime import datetime
 from pathlib import Path
 
-FRONTMATTER = re.compile(r"\A---\n.*?\n---\n+", re.DOTALL)
+FRONTMATTER = re.compile(r"\A---\n(.*?)\n---\n+", re.DOTALL)
 ENTRY = re.compile(r"\* \[([^\]]+)\]\(([^)\s]+)\)(?: - .*)?")
 DOCS = "docs"
 CONTENTS = "contents.md"
+STATUSES = ("draft", "stable", "deprecated")
+RESERVED = ("index.md", "log.md")
 
 
 def strip_frontmatter(text):
     return FRONTMATTER.sub("", text, count=1)
+
+
+def frontmatter(text):
+    """The top-level keys of a page's frontmatter and their values as
+    written, unquoted."""
+    m = FRONTMATTER.match(text)
+    fields = {}
+    for line in m.group(1).splitlines() if m else ():
+        key, sep, value = line.partition(":")
+        if sep and key and not key[0].isspace() and key[0] not in "#-":
+            fields[key] = value.strip().strip("'\"")
+    return fields
+
+
+def check(name, text):
+    """A page must have a type and a status, and a draft the instant from
+    which it is stale, where OKF makes both optional. Whether that instant
+    has passed is not checked, so that a build does not depend on when it
+    runs."""
+    fields = frontmatter(text)
+    if not fields.get("type"):
+        raise ValueError(f"{name}: no type")
+    status = fields.get("status")
+    if status not in STATUSES:
+        raise ValueError(f"{name}: status {status!r} is not one of {STATUSES}")
+    if status == "draft":
+        try:
+            stale_after = datetime.fromisoformat(
+                re.sub(r"Z$", "+00:00", fields.get("stale_after", ""))
+            )
+        except ValueError:
+            stale_after = None
+        if stale_after is None or stale_after.tzinfo is None:
+            raise ValueError(
+                f"{name}: a draft needs stale_after, an ISO 8601 instant with an offset"
+            )
 
 
 def resolve(base, path):
@@ -69,14 +108,15 @@ def contents(index):
 def assemble(root, out):
     docs = root / DOCS
     index = (docs / "index.md").read_text()
-    pages = {
-        page.relative_to(docs).as_posix(): page.read_text()
-        for page in sorted(docs.rglob("*.md"))
-    }
+    pages = {}
+    for page in sorted(docs.rglob("*.md")):
+        if page.name not in RESERVED:
+            name = page.relative_to(docs).as_posix()
+            pages[name] = page.read_text()
+            check(name, pages[name])
     # docs/README.md directs readers of the repository to the book; as a
     # chapter it would overwrite the introduction.
-    for name in ("index.md", "README.md"):
-        pages.pop(name, None)
+    pages.pop("README.md", None)
     out.mkdir(parents=True, exist_ok=True)
     shutil.copytree(docs, out, ignore=shutil.ignore_patterns("*.md"), dirs_exist_ok=True)
     (out / "SUMMARY.md").write_text(summary(index, pages))

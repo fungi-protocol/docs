@@ -65,15 +65,77 @@ def test_summary_rejects_a_page_left_out_of_the_index():
         book.summary("# Part\n\n* [One](one.md)\n", CHAPTERS)
 
 
+@pytest.mark.parametrize(
+    "fields",
+    [
+        "type: Chapter\nstatus: stable",
+        "type: Chapter\nstatus: deprecated",
+        "type: Chapter\nstatus: draft\nstale_after: 2027-04-14T00:00:00Z",
+        "type: Chapter\nstatus: draft\nstale_after: '2027-04-14T00:00:00+02:00'",
+    ],
+)
+def test_check_accepts_a_status_and_a_draft_that_can_go_stale(fields):
+    book.check("one.md", f"---\n{fields}\n---\n\n# One\n")
+
+
+@pytest.mark.parametrize(
+    "text, error",
+    [
+        ("# One\n", "no type"),
+        ("---\nstatus: stable\n---\n", "no type"),
+        ("---\ntype: Chapter\n---\n", "status None"),
+        ("---\ntype: Chapter\nstatus: final\n---\n", "status 'final'"),
+        ("---\ntype: Chapter\nstatus: draft\n---\n", "stale_after"),
+        (
+            "---\ntype: Chapter\nstatus: draft\nstale_after: 2027-04-14\n---\n",
+            "stale_after",
+        ),
+        ("---\ntype: Chapter\nstatus: draft\nstale_after: soon\n---\n", "stale_after"),
+    ],
+)
+def test_check_rejects_a_page_without_a_type_status_or_stale_after(text, error):
+    with pytest.raises(ValueError, match=f"one.md: .*{error}"):
+        book.check("one.md", text)
+
+
+def test_assembly_skips_reserved_files_at_any_level(tmp_path):
+    root, out = tmp_path / "root", tmp_path / "src"
+    (root / "docs" / "sub").mkdir(parents=True)
+    (root / "README.md").write_text("# Intro\n")
+    (root / "docs" / "index.md").write_text("# Part\n")
+    (root / "docs" / "log.md").write_text("# Log\n\n## 2026-10-15\n* Created.\n")
+    (root / "docs" / "sub" / "index.md").write_text("# Sub\n")
+    book.assemble(root, out)
+    assert sorted(p.relative_to(out).as_posix() for p in out.rglob("*.md")) == [
+        "README.md",
+        "SUMMARY.md",
+        "contents.md",
+    ]
+
+
+def test_assembly_checks_the_readme_it_skips(tmp_path):
+    root = tmp_path / "root"
+    (root / "docs").mkdir(parents=True)
+    (root / "README.md").write_text("# Intro\n")
+    (root / "docs" / "index.md").write_text("# Part\n")
+    (root / "docs" / "README.md").write_text("---\ntype: Readme\n---\n")
+    with pytest.raises(ValueError, match="README.md: status"):
+        book.assemble(root, tmp_path / "src")
+
+
 def test_assembly_covers_every_chapter(tmp_path):
     root, out = tmp_path / "root", tmp_path / "src"
     (root / "docs" / "sub").mkdir(parents=True)
     (root / "README.md").write_text("# Intro\n\nSee [one](docs/one.md).\n")
     (root / "docs" / "index.md").write_text(INDEX)
-    (root / "docs" / "README.md").write_text("---\ntype: Readme\n---\n\nAbout.\n")
-    (root / "docs" / "one.md").write_text("---\ntype: Chapter\n---\n\n# One\n")
+    (root / "docs" / "README.md").write_text(
+        "---\ntype: Readme\nstatus: stable\n---\n\nAbout.\n"
+    )
+    (root / "docs" / "one.md").write_text(
+        "---\ntype: Chapter\nstatus: stable\n---\n\n# One\n"
+    )
     (root / "docs" / "sub" / "two.md").write_text(
-        "---\ntype: Chapter\n---\n\n# Two\n\nAfter [one](../one.md).\n"
+        "---\ntype: Chapter\nstatus: stable\n---\n\n# Two\n\nAfter [one](../one.md).\n"
     )
     book.assemble(root, out)
     assert sorted(p.relative_to(out).as_posix() for p in out.rglob("*.md")) == [

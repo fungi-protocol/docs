@@ -3,6 +3,7 @@ type: BIP Draft
 title: PSBT Scrubber
 description: Which PSBT fields can be shared with trusted and untrusted parties such that privacy is preserved.
 status: draft
+stale_after: 2027-01-14T00:00:00Z
 ---
 
 # BIP: XXX Privacy PSBT
