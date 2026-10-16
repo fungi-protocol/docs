@@ -44,6 +44,12 @@
               pytest -p no:cacheprovider
               touch $out
             '';
+        links = pkgs.runCommand "links" { nativeBuildInputs = [ pkgs.lychee pkgs.cacert ]; } ''
+          # Links to the repository are checked against the tree the site is built from.
+          lychee --offline --include-fragments --no-progress --root-dir ${site} \
+            --remap '^${repository}/blob/${rev}/ file://${../.}/' ${site}
+          touch $out
+        '';
       };
 
       packages = {
