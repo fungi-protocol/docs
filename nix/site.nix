@@ -39,6 +39,13 @@
               pytest -p no:cacheprovider
               touch $out
             '';
+        # lychee loads CA certificates to build its HTTP client even with --offline.
+        links = pkgs.runCommand "links" { nativeBuildInputs = [ pkgs.lychee pkgs.cacert ]; } ''
+          # The site is served from /docs/, so a link from the root leaves it.
+          mkdir root && ln -s ${site} root/docs
+          lychee --offline --include-fragments --no-progress --root-dir $PWD/root root/docs
+          touch $out
+        '';
       };
 
       packages = {
