@@ -16,6 +16,7 @@
       imports = [
         ./nix/mermaid.nix
         ./nix/preprocessors.nix
+        ./nix/relink.nix
         ./nix/site.nix
         ./nix/devshell.nix
         ./nix/spellcheck.nix

@@ -3,6 +3,16 @@ title = "Fungi Protocol Suite"
 language = "en"
 src = "src"
 
+[build]
+create-missing = false
+
+# Links out of the book name a revision; nix/site.nix sets the one it builds.
+[preprocessor.relink]
+command = "relink"
+after = ["links"]
+before = ["graphviz", "katex", "mermaid"]
+blob = "https://github.com/fungi-protocol/docs/blob/main"
+
 [preprocessor.graphviz]
 command = "mdbook-graphviz"
 after = ["links"]

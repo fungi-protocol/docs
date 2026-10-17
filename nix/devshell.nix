@@ -1,15 +1,15 @@
 { ... }:
 {
   perSystem =
-    { pkgs, mmdc, ... }:
+    { pkgs, mmdc, relink, ... }:
     {
       devShells.default = pkgs.mkShell {
-        packages = [ mmdc ] ++ (with pkgs; [
+        packages = [ mmdc relink ] ++ (with pkgs; [
           mdbook
           mdbook-graphviz
           mdbook-katex
           graphviz
-          python3
+          (python3.withPackages (ps: [ ps.pytest ]))
         ]);
       };
     };
