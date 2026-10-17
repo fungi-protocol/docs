@@ -2,7 +2,7 @@
 type: Stub
 title: Cost function framework for Bitcoin wallets
 status: draft
-stale_after: 2027-04-15T00:00:00Z
+stale_after: 2026-10-31T00:00:00Z
 ---
 
 # Cost function framework for Bitcoin wallets
