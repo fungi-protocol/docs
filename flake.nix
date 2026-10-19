@@ -19,6 +19,7 @@
         ./nix/site.nix
         ./nix/devshell.nix
         ./nix/spellcheck.nix
+        ./nix/apps/validate-commits
       ];
     };
 }

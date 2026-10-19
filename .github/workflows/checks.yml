@@ -1,6 +1,8 @@
 name: Flake checks
 on:
   pull_request:
+  merge_group:
+    types: [checks_requested]
 permissions:
   actions: read # lets hestia detect evicted cache entries upfront
   contents: read
@@ -8,14 +10,25 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 jobs:
-  check:
+  validate-commits:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    env:
+      BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha }}
     steps:
+      - name: Compute initial fetch depth
+        id: fetch-depth
+        env:
+          PR_COMMITS: ${{ github.event.pull_request.commits || 0 }}
+        run: echo "depth=$((PR_COMMITS + 2))" >> "$GITHUB_OUTPUT"
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: ${{ steps.fetch-depth.outputs.depth }}
+      - name: Fetch validation history
+        run: bash .github/scripts/fetch-validation-history.sh "$BASE_SHA"
       - uses: DeterminateSystems/nix-installer-action@3138316df39ed29be04236d7ffc686fa525866aa # v23
       - uses: Mic92/hestia@dfed9ced335d28978ba74e513939a10db1f71025 # v3.1.0
         with:
           # Do not upload paths that cache.nixos.org already serves.
           upstream-cache-filter: true
-      - run: nix flake check --no-update-lock-file
+      - name: Validate commits
+        run: nix run --no-update-lock-file '.?shallow=1#validate-commits' -- "$BASE_SHA..HEAD"
