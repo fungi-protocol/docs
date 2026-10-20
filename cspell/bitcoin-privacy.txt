@@ -3,11 +3,13 @@ blockspace
 CoinJoin
 deanonymization
 deanonymize
+deanonymizing
 CLTV
 CPFP
 DLEQ
 ECDH
 feerate
+feerates
 finalizer
 HTLCs
 keytype
