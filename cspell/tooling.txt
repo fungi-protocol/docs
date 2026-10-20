@@ -1,0 +1,21 @@
+# Repository tools, identifiers, and upstream authors
+cacheprovider
+DejaVu
+devshell
+DNSSEC
+dontInstall
+dylanowen
+fontconfig
+Graphviz
+KaTeX
+lzanini
+mdBook
+mmdc
+NixOS
+nixpkgs
+pkgs
+pytest
+PyYAML
+stdenv
+toplevel
+unfetched

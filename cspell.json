@@ -1,0 +1,36 @@
+{
+  "version": "0.2",
+  "language": "en-US,en-GB",
+  "useGitignore": true,
+  "files": [
+    "**/*.{md,py,rs,nix,sh,toml,css}",
+    ".github/**/*.{yml,yaml,sh}",
+    "cspell.json"
+  ],
+  "ignorePaths": [
+    ".git/**",
+    ".jj/**",
+    "/src/**",
+    "/book/**",
+    "/result/**"
+  ],
+  "dictionaries": [
+    "bash",
+    "css",
+    "fonts",
+    "python",
+    "networking-terms",
+    "bitcoin-privacy",
+    "repo-tooling"
+  ],
+  "dictionaryDefinitions": [
+    {
+      "name": "bitcoin-privacy",
+      "path": "./cspell/bitcoin-privacy.txt"
+    },
+    {
+      "name": "repo-tooling",
+      "path": "./cspell/tooling.txt"
+    }
+  ]
+}
