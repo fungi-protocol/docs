@@ -167,7 +167,7 @@ def test_assembly_covers_every_chapter(tmp_path):
         "one.md",
         "sub/two.md",
     ]
-    assert (out / "README.md").read_text() == "# Intro\n\nSee [one](docs/one.md).\n"
+    assert (out / "README.md").read_text() == "# Intro\n\nSee [one](one.md).\n"
     contents = (out / "contents.md").read_text()
     assert "* [Two](sub/two.md) - The second chapter." in contents
     assert (out / "one.md").read_text() == "# One\n"
