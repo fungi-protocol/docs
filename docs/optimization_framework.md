@@ -58,6 +58,8 @@ This generates many independent outcomes, each complete and balanced, each made 
 
 The coins these outcomes share then guide the structure of the tree, as does each coin's luck, both now and at the next block, since the randomness beacon can be a block hash at some depth below the tip rather than the tip itself. Actions are scheduled least committal first, so the actions shared by the most outcomes end up nearest the root.
 
+Within a batch, inputs are added before outputs, and signatures come last. Inputs named in co-spend proposals are scheduled early, in particular those compatible with the most favorable outcomes. *Auxiliary* inputs, which aren't named in any co-spend proposal, are added using the weight unit credits of these initial inputs. Whether to include them can be decided after observing the other users' initial inputs, i.e. the full list of UTXOs in the coalition formation proposal.
+
 Each path down the tree is a plan, i.e. a pure strategy. Since announcements and co-spend proposals are actions like any other, they are planned as well. New alternatives can be added to the tree, or a whole new tree can be computed from any state and combined with the current one as further alternatives.
 
 Because the tree is potentially large and costly to generate and evaluate, most of it is generated up front. It is then updated as co-spend proposals, coalition formation proposals, and the auxiliary inputs of committed transactions are learned.
