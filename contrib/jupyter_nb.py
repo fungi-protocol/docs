@@ -103,8 +103,9 @@ def is_notebook(chapter):
 
 
 def chapters(items):
+    # Separators are bare strings, part titles are `{"PartTitle": ...}`.
     for item in items or []:
-        chapter = item.get("Chapter")
+        chapter = item.get("Chapter") if isinstance(item, dict) else None
         if chapter:
             yield chapter
             yield from chapters(chapter.get("sub_items"))

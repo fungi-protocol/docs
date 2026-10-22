@@ -1,5 +1,6 @@
 # Repository tools, identifiers, and upstream authors
 cacheprovider
+capsys
 DejaVu
 devshell
 DNSSEC
