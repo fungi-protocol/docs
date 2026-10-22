@@ -15,13 +15,25 @@ convention via `metadata.tags`:
     show-input     force the source to be shown in a fenced block
     remove-output  drop the outputs
 
+Links to notebook chapters, `[text](notebook.ipynb#section)`, are pointed
+at the chapter's `.md` path: mdbook rewrites `.md` links to the rendered
+pages, on the print page too, but leaves `.ipynb` links as they are.
+
 Plots read on every mdbook theme when the notebook saves them transparent
 with medium-lightness chrome (see the style cell in the notebook); a raster
 cannot be recoloured by css the way inline svg can.
 """
 import json
+import posixpath
 import re
 import sys
+
+# The relative target of an inline link or a reference definition, if it
+# ends in `.ipynb`, before any fragment.
+NOTEBOOK_LINK = re.compile(
+    r"(\]\(\s*<?|^[ ]{0,3}\[[^\]]+\]:[ \t]*<?)([^\s()<>#?:]+)\.ipynb(?=[#>)\s]|$)",
+    re.M,
+)
 
 
 def cell_tags(cell):
@@ -90,14 +102,23 @@ def is_notebook(chapter):
     return False
 
 
-def walk(items):
+def chapters(items):
     for item in items or []:
         chapter = item.get("Chapter")
-        if not chapter:
-            continue
-        if is_notebook(chapter) and chapter.get("content", "").strip():
-            chapter["content"] = render_notebook(json.loads(chapter["content"]))
-        walk(chapter.get("sub_items"))
+        if chapter:
+            yield chapter
+            yield from chapters(chapter.get("sub_items"))
+
+
+def link_notebooks(chapter, notebooks):
+    """Point links that resolve to one of `notebooks` at its `.md` path."""
+    here = posixpath.dirname(chapter.get("path") or "")
+
+    def fix(m):
+        target = posixpath.normpath(posixpath.join(here, m.group(2) + ".ipynb"))
+        return m.group(1) + m.group(2) + ".md" if target in notebooks else m.group(0)
+
+    chapter["content"] = NOTEBOOK_LINK.sub(fix, chapter.get("content", ""))
 
 
 def main():
@@ -105,7 +126,15 @@ def main():
         sys.exit(0)
     _context, book = json.load(sys.stdin)
     # mdbook 0.5 renamed the top level key from `sections` to `items`.
-    walk(book.get("items", book.get("sections")))
+    items = book.get("items", book.get("sections"))
+    notebooks = set()
+    for chapter in chapters(items):
+        if is_notebook(chapter):
+            notebooks.add(posixpath.normpath(chapter.get("path") or chapter["source_path"]))
+            if chapter.get("content", "").strip():
+                chapter["content"] = render_notebook(json.loads(chapter["content"]))
+    for chapter in chapters(items):
+        link_notebooks(chapter, notebooks)
     json.dump(book, sys.stdout)
 
 
