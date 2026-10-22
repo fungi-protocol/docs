@@ -152,7 +152,7 @@ Let's momentarily ignore both the severity of the harm of such privacy leaks (as
 
 On-chain privacy techniques in Bitcoin come in two flavors: overt or covert. Overt techniques add ambiguity in a way that is apparent, and therefore can be identified as privacy enhanced transactions (e.g. CoinJoin). Contrast this with covert techniques (e.g. CoinSwap), which aren't easily identifiable.
 
-Both overt and covert techniques carry censorship risk. For overt techniques this is inherent, as the use of the technique is self-evident, and exchanges that may regard this as a compliance risk (which incidentally is more often the case for fraudulent exchanges) are more likely to reject or even confiscate deposits that are linkable to such techniques. For covert techniques, although the technique itself doesn't flag a deposit, it may result in counterfactual linking of the deposit funds to coins that are deemed tainted.
+Both overt and covert techniques carry censorship risk. For overt techniques this is inherent, as the use of the technique is self-evident, and exchanges that may regard this as a compliance risk (which incidentally is more often the case for fraudulent exchanges) are more likely to reject or even confiscate deposits that are linkable to such techniques. For covert techniques, although the technique itself doesn't flag a deposit, it may result in [counterfactual linking](collaborative_txn_privacy.md) of the deposit funds to coins that are deemed tainted.
 
 <!-- cspell:words Parameterizing -->
 
