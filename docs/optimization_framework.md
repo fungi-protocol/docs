@@ -36,9 +36,37 @@ A wallet constructs a decision tree whose root is the current wallet state. Each
 
 Leaves are mutually exclusive outcomes under consideration. An action may create or modify a collaborative transaction, advance a coalition formation negotiation, or fall back to a unilateral transaction. When a transaction is confirmed the corresponding intents are removed from the queue.
 
-FIXME The tree is constructed bottom up, starting with the desired outcomes, and working back towards the immediate actions that would lead to that outcome.
+Actions include announcements and negotiation, not just the steps of transaction construction. For example:
+
+- broadcasting an [ownership proof](coalition_formation.md) for a coin
+- updating a coin's listen advertisement to solicit co-spend proposals
+- making a co-spend proposal naming specific coins, and choosing the payoff for each
+- making a co-spend proposal naming a single coin, with a surplus and a subset sum density requirement, leaving the search over the order book to an aggregator
+- accepting a co-spend proposal, or a coalition formation proposal
+- adding auxiliary inputs and outputs to a committed transaction, and signing it
+
+#### Constructing the tree
+
+The tree is built bottom up, starting with complete outcomes and working back towards the immediate actions that would lead to them:
+
+1. Partition the queue of intents heuristically. Each partition is an outcome: a set of batches to execute.
+2. For each outcome, select coins batch by batch, possibly shuffling. Coin selection may optimize or be fully randomized, and interactive incoming payments can be treated as pseudo-inputs. This ensures that the outcome has a positive surplus and can be executed.
+3. Decompose each surplus into radix denominations, enumerating the possibilities by brute force.
+4. Extend outcomes by selecting coins from the order book.
+
+This generates many independent outcomes, each complete and balanced, each made up of disjoint batches. Typically there will be one greedy batch, or one small batch for a unilateral fallback if an intent becomes urgent.
+
+The coins these outcomes share then guide the structure of the tree, as does each coin's luck, both now and at the next block, since the randomness beacon can be a block hash at some depth below the tip rather than the tip itself. Actions are scheduled least committal first, so the actions shared by the most outcomes end up nearest the root.
+
+Each path down the tree is a plan, i.e. a pure strategy. Since announcements and co-spend proposals are actions like any other, they are planned as well. New alternatives can be added to the tree, or a whole new tree can be computed from any state and combined with the current one as further alternatives.
+
+Because the tree is potentially large and costly to generate and evaluate, most of it is generated up front. It is then updated as co-spend proposals, coalition formation proposals, and the auxiliary inputs of committed transactions are learned.
+
+The expected durations of steps can be annotated along each path. This takes the time dependence of the leaves into account, so that actions are scheduled early enough.
 
 The solver searches for sequences that lead to states with greater valuation. It values the leaves first, then propagates their bracketed or expected values toward the root. This reduces a plan involving many contingent future actions to comparisons among the actions available now.
+
+Internalizing the expectations about a node's children into the node gives the node its own piecewise linear curve. Solving it for the time at which the next child is expected to have positive utility determines when to take that branch, unless new information invalidates the decision in the meantime.
  
 ## Coin selection with objective costs
 
