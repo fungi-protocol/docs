@@ -184,9 +184,9 @@ What is possible to say is that this cost can be quantified concretely by accoun
 
 ### Payment urgency
 
-As described in abstract terms above, a per intent deadline or confirmation target similar to the standard user experience for determining feerates can be used to control the time sensitivity of specific actions. Although imagining the cost function outputs a function of time has mathematical appeal, in practice to simplify things we can model these as piecewise linear scaling of cost function terms which are computed independently of time.
+As described in abstract terms above, a per intent deadline or confirmation target similar to the standard user experience for determining feerates can be used to control the time sensitivity of specific actions. More generally, every term of the cost function and every intent in the queue may depend on time, and how it does may depend on what is being evaluated. This time dependence is modeled as piecewise linear offsets to values computed independently of time, so the cost function returns a family of piecewise linear functions of time, one per term. Evaluating them at a given time is just a matter of indexing them and taking a sum, but treating them explicitly as piecewise linear functions makes it possible to solve for intercepts.
 
-The privacy sensitivity of a transaction determines whether the preferred behavior is to execute a payment even if privacy is sacrificed as the deadline approaches, or whether it's better to miss the deadline or even forego the transaction entirely if the payment cannot be made privately. This can be modeled as divergence towards negative or positive infinity after the deadline elapses.
+The privacy sensitivity of a transaction determines whether the preferred behavior is to execute a payment even if privacy is sacrificed as the deadline approaches, or whether it's better to miss the deadline or even forgo the transaction entirely if the payment cannot be made privately. This is determined by the shape of the intent's utility curve. If it plateaus or turns downwards, then a payment that cannot be made privately should not be made at all. If it keeps rising, then at some point the utility of making the payment dominates any privacy liabilities, which is how a hard deadline is modeled.
 
 ### Global privacy budget
 
