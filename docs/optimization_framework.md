@@ -195,13 +195,45 @@ The privacy sensitivity of a transaction determines whether the preferred behavi
 
 ### Global privacy budget
 
-Finally, a global (i.e. per wallet, not per intent or transaction) budget specified as a percentage of all externally received funds is used to normalize all metrics so that the costs of actions with different privacy outcomes are directly comparable.
+Finally, a global (i.e. per wallet, not per intent or transaction) budget is used to normalize all metrics so that the costs of actions with different privacy outcomes are directly comparable. The budget has two parts: the *budget rate* $p$, a percentage chosen by the user, and the *remaining budget* $B$, an amount in satoshis. Only funds received at external addresses add to the remaining budget, which grows by $p$ times their value, and privacy-motivated expenses are deducted from it.
 
-This global budget limits overall spending for the purposes of privacy. This implies a lower bound for the expected harm from privacy leaks, since in specifying it the user is indicating that they wish to spend up to this amount preventing that harm. This accounts for any downsides as well, such as the censorship risk or additional resources consumed.
+This global budget limits overall spending for the purposes of privacy. The budget rate implies a lower bound for the expected harm from privacy leaks, since in setting it the user is indicating that the privacy improvements the wallet can provide are worth at least that much to them. This accounts for any downsides as well, such as the censorship risk or additional resources consumed.
 
-When coins lack any sufficient privacy (e.g. when known to a counterparty), their value should be discounted by the budget, effectively devaluing non-private wallet states. As progress is made towards satisfying the thresholds on privacy metrics, some coins will be closer to their face value, an increase in subjective value. This simplifies the cost function so it only outputs a satoshi amount, allowing subjective and objective costs to be reduced to a single number, and therefore comparisons can be made between the wallet states predicted to result from taking one action vs. another.
+Each coin has a *privacy liability* $\lambda$. Concrete privacy terms each start from their own notions, for example quantifying the entropy of a coin's anonymity set and how close it is to some threshold, potentially non-linearly, and are normalized into a single ensemble liability. Coins received at external addresses start at the baseline $\lambda = 1$, since the wallet has no prior knowledge about them, and change outputs of unilateral payments are treated the same way. Their descendants may have a lower liability when they are produced by automated actions, reaching 0 when the coins are deemed fully private. $\lambda$ is stored per coin, but it is derived information.
 
-For example, suppose Alice set her budget to 1%. She receives a coin with value $x$. Her total budget $b_0$ is $0.01x$. The subjective balance of the wallet is $x - b_0 = 0.99x$. The wallet then automatically does a CoinJoin transaction and its subjective cost $y$ is subtracted from the budget, $b_1 = b_0 - y$. This is also deducted from the subjective balance, but due to an improvement in the privacy metrics the subjective balance increases overall (or the transaction wouldn't have been made). The coin with nominal value $x$ and subjective value $x - b_0$ has been destroyed, and replaced with a coin whose nominal value is $x - y$ and whose subjective value is at least $x - b_1$ and at most $x - y$.
+A coin's *subjective value* is its nominal value $x$ discounted by $\lambda p x$, effectively devaluing non-private wallet states. This is what turns abstract thresholds on privacy metrics into a penalty in satoshis. It simplifies the cost function so it only outputs a satoshi amount, allowing subjective and objective costs to be reduced to a single number, and therefore comparisons can be made between the wallet states predicted to result from taking one action vs. another. Since the discount depends only on the coin itself, this applies regardless of how many inputs and outputs a transaction has.
+
+A transaction spending coins with total discount $d_{in}$ and creating coins with total discount $d_{out}$ at an objective cost of $y$ changes the wallet's total subjective value by
+
+$$(d_{in} - d_{out}) - y,$$
+
+so on privacy grounds alone, an action is only worth taking if the reduction in discounts dominates its cost. Privacy-motivated costs must also fit within the remaining budget. Other terms, such as the waste metric or the utility of completing a payment, also drive the decision. However, the utility of a payment is not part of the subjective value of the resulting state: a payment's utility rising over time doesn't mean that waiting longer to make it would leave the wallet with a higher subjective balance.
+
+For example, suppose Alice sets her budget rate to 1% and receives a coin of 100,100 sats, adding 1,001 sats to her remaining budget. The coin is not yet private, so its subjective value is 99,099 sats. The wallet considers CoinJoin transactions costing 100 sats in fees, each replacing it with a coin of 100,000 sats:
+
+| | nominal | $\lambda$ | discount | subjective value | change |
+|---|---|---|---|---|---|
+| before | 100,100 | 1 | 1,001 | 99,099 | |
+| large improvement | 100,000 | 0.5 | 500 | 99,500 | +401 |
+| small improvement | 100,000 | 0.8 | 800 | 99,200 | +101 |
+| not worth it | 100,000 | 0.95 | 950 | 99,050 | −49 |
+
+Either of the first two outcomes is worth taking, and either leaves 901 sats in the remaining budget. The last reduces the discount by only 51 sats while costing 100, so the wallet would not make it.
+
+The same accounting applies when coins are split or consolidated. Splitting the same coin into two outputs whose liabilities improve by different amounts:
+
+| | nominal | $\lambda$ | discount | subjective value |
+|---|---|---|---|---|
+| input | 100,100 | 1 | 1,001 | 99,099 |
+| output A | 60,000 | 0.5 | 300 | 59,700 |
+| output B | 40,000 | 0.9 | 360 | 39,640 |
+| outputs total | 100,000 | | 660 | 99,340 |
+
+Discounts fall by 341, which dominates the fee, for a net change of +241. Consolidating two non-private coins of 60,000 and 40,100 sats (discounts of 600 and 401) into a single CoinJoin output of 100,000 sats with $\lambda = 0.5$ gives exactly the same result as the single coin, +401, since only the totals on each side matter.
+
+When evaluating a candidate action, the cost function may assign $\lambda > 1$ to the resulting coins. For example, if the privacy metrics assess the output of consolidating the same two coins without a CoinJoin, at the same fee, at $\lambda = 1.2$, its discount is 1,200 and its subjective value 98,800, a change of −299 before any other terms. Such an increase counts against the action, which is only taken if other terms outweigh it, for example the utility of a payment with a hard deadline. Such states never materialize as the result of an automated action: once the action is taken, the resulting coins have their liability capped at the baseline of 1. The same applies if the user manually takes an action the wallet would not have taken: the loss it implies is written off as an external adjustment authorized by the user, reflecting a valuation the cost function fails to capture.
+
+In general, a transaction which is worth taking on privacy grounds alone, spending coins of nominal value $x$ with total discount $d$ at a cost of $y$, results in coins whose subjective value is greater than $x - d$ and at most $x - y$ (when no liability remains).
 
 ## Use in multiparty protocols
 
