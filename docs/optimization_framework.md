@@ -154,6 +154,8 @@ On-chain privacy techniques in Bitcoin come in two flavors: overt or covert. Ove
 
 Both overt and covert techniques carry censorship risk. For overt techniques this is inherent, as the use of the technique is self-evident, and exchanges that may regard this as a compliance risk (which incidentally is more often the case for fraudulent exchanges) are more likely to reject or even confiscate deposits that are linkable to such techniques. For covert techniques, although the technique itself doesn't flag a deposit, it may result in counterfactual linking of the deposit funds to coins that are deemed tainted.
 
+<!-- cspell:words Parameterizing -->
+
 ## Parameterizing the cost function according to user preferences
 
 The design space of a cost function for privacy has three main axes: improving privacy, minimizing delays, and economizing on cost, all of which trade off against each other. When considering each transaction independently, although there are 3 dimensions for optimization, there are only two degrees of freedom. Meaningfully improving privacy on Bitcoin requires interaction with others, which can inherently introduce delays, or it can require improving the ambiguity of the transaction structure with the goal of frustrating analysis, and this often requires utilizing more blockspace. The sooner this is needed, the higher the fees incurred.
