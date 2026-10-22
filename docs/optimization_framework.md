@@ -11,16 +11,19 @@ This document describes how to score the outcomes of transacting on Bitcoin, in 
 
 ## Preliminaries
 
-TODO
+Automating the decisions delegated to a wallet is an optimization problem, and every optimization problem has a cost function.
 
-- this is an optimization problem, every optzn problem has a cost function
-- this actual cost function is a mixed strategy, we model it explicitly as a decision tree and we randomize
-- the thing we call "the" cost function is a pure strategy, it evaluates specific contingencies
-  - it is a sum of various terms
-    - objective costs
-    - privacy liabilities
-    - payoffs from completing goals (e.g. making a payment)
-  - every term is a piecewise linear function of time, terms evaluated and summed at a point in time
+A *pure strategy* is a complete plan: a sequence of actions leading from the current wallet state to one specific outcome, i.e. one path down the [decision tree](#decision-tree-structure). *The* cost function, the one this document defines, evaluates pure strategies. It is a sum of terms of three kinds:
+
+- objective costs, such as fees
+- privacy liabilities
+- payoffs from completing goals, such as making a payment
+
+Every term is a piecewise linear function of time, and is known to be either privacy related or not. A pure strategy is evaluated at a point in time by evaluating each of its terms at that time and taking their sum.
+
+The wallet doesn't simply follow the best pure strategy. If it did, an adversary able to predict the wallet's state could also predict its choices. Instead it plays a *mixed strategy*: it chooses uniformly at random among the $k$ best pure strategies, where $k$ is a parameter. This adds noise to the wallet's revealed preferences. The decision tree models the pure strategies explicitly, and the wallet randomizes over them. What counts as the $k$ best may need refining, for example requiring them to be sufficiently dissimilar, or sampling non-uniformly from a larger set, with lower probability for similar choices.
+
+A cost function for the mixed strategy exists, but it is a more complicated mathematical object, which this document doesn't define or study. It only describes how the mixed strategy is played.
 
 ## Wallet states and actions
 
