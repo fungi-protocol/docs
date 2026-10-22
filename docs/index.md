@@ -22,6 +22,7 @@ okf_version: "0.2"
 # Privacy Optimization Strategy
 
 * [Optimization framework for Bitcoin wallets](optimization_framework.md) - Under review in #15.
+* [Radix CoinJoin Denominations](Denominations_and_gap_size_distributions.ipynb) - Why small Hamming weight denominations suit CoinJoin outputs, and how closely sums of a few of them approximate arbitrary amounts.
 * [🤖 Pure Strategy Evaluation](pure_strategy_evaluation.md) - How the cost of a pure strategy is evaluated: the structure of the cost function, and its privacy liability terms.
   * [🤖 Cost function structure](cost_function_structure.md) - The structure shared by the family of cost functions that evaluate pure strategies: time dependence, linear combination of terms and bracketing.
   * [🤖 Privacy liability terms](cost_function_concrete.md) - What each privacy liability term of the cost function is for: the risk it prices, what it encourages, and how it relates to the others.
