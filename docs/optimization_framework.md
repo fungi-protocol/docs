@@ -59,6 +59,8 @@ The tree is built bottom up, starting with complete outcomes and working back to
 
 This generates many independent outcomes, each complete and balanced, each made up of disjoint batches. Typically there will be one greedy batch, or one small batch for a unilateral fallback if an intent becomes urgent.
 
+Order book coins that would increase the number of counterfactual paths into the wallet's new outputs are especially valuable (see *Max flow based counterfactual path estimation*). Such a coin adds paths as a co-input when it descends from the origins of the wallet's own inputs. However, a co-spend proposal made from the wallet's input that the paths are added to, naming such a coin, links the two, unless such proposals are already common. An outcome may still prefer such a selection, but the cost function should penalize co-spend proposals that leak the link in this way.
+
 The coins these outcomes share then guide the structure of the tree, as does each coin's luck, both now and at the next block, since the randomness beacon can be a block hash at some depth below the tip rather than the tip itself. Actions are scheduled least committal first, so the actions shared by the most outcomes end up nearest the root.
 
 Within a batch, inputs are added before outputs, and signatures come last. Inputs named in co-spend proposals are scheduled early, in particular those compatible with the most favorable outcomes. *Auxiliary* inputs, which aren't named in any co-spend proposal, are added using the weight unit credits of these initial inputs. Whether to include them can be decided after observing the other users' initial inputs, i.e. the full list of UTXOs in the coalition formation proposal.
