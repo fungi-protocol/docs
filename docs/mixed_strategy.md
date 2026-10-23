@@ -23,6 +23,8 @@ The solver searches for sequences that lead to states with greater valuation. It
 
 Internalizing the expectations about a node's children into the node gives the node its own piecewise linear curve. Solving it for the time at which the next child is expected to have positive utility determines when to take that branch, unless new information invalidates the decision in the meantime.
 
-## Greedy loop
+## Decision loop
 
-This makes a simple greedy loop sufficient. From the current state, the wallet finds the next action, i.e. the child of the root, that will become attractive soonest, waits for it to do so, and takes it. It then prunes that action's siblings, committing to the sub-tree below it. There can be multiple paths to the same outcome, for example through repeated actions or states that converge, so an implementation may share sub-trees and represent the tree as a DAG.
+The wallet acts in a decision loop. Internalization is what allows this loop to be run as a greedy search, going one level down the tree per iteration: since each node already accounts for what may follow it, a look ahead of depth 1 is sufficient. Internalizing takes one pass over the tree, and doesn't need to be repeated on every iteration of the loop.
+
+From the current state, the wallet finds the next action, i.e. the child of the root, that will become attractive soonest, waits for it to do so, and takes it. It then prunes that action's siblings, committing to the sub-tree below it. There can be multiple paths to the same outcome, for example through repeated actions or states that converge, so an implementation may share sub-trees and represent the tree as a DAG.
