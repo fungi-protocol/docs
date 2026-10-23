@@ -2,8 +2,12 @@
 """mdbook preprocessor: render ```mermaid blocks to inline SVG with mmdc.
 
 Expects the `mmdc` from nix/mermaid.nix, which comes wrapped with the
-headless chromium it drives.
+headless chromium it drives. If MERMAID_SVG_DIR is set, it renders nothing
+itself: it takes each diagram from MERMAID_SVG_DIR/<sha256 of its
+source>/<theme>.svg, as nix/mermaid.nix renders them, with PLACEHOLDER
+standing for the svg id.
 """
+import hashlib
 import json
 import os
 import re
@@ -17,9 +21,21 @@ FENCE = re.compile(
     r"^(?P<fence>`{3,})mermaid[^\n]*\n(?P<body>.*?)^(?P=fence)[ \t]*$",
     re.S | re.M,
 )
+PLACEHOLDER = "MERMAID_SSR_ID"
 
 
 def render(source, theme, svg_id):
+    rendered = os.environ.get("MERMAID_SVG_DIR")
+    if rendered:
+        digest = hashlib.sha256(source.encode()).hexdigest()
+        try:
+            with open(os.path.join(rendered, digest, theme + ".svg")) as f:
+                return f.read().replace(PLACEHOLDER, svg_id)
+        except FileNotFoundError:
+            sys.stderr.write(
+                "mermaid_ssr: %s has no diagram %s; nix/mermaid.nix did not "
+                "find this block:\n%s" % (rendered, digest, source))
+            sys.exit(1)
     with tempfile.TemporaryDirectory() as tmp:
         mmd = os.path.join(tmp, "in.mmd")
         svg = os.path.join(tmp, "out.svg")
