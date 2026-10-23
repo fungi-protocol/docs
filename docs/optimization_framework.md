@@ -1,13 +1,13 @@
 ---
 type: concept
-title: Cost function framework for Bitcoin wallets
+title: Optimization framework for Bitcoin wallets
 status: draft
 stale_after: 2026-10-31T00:00:00Z
 ---
 
-# Cost function framework for Bitcoin wallets
+# Optimization framework for Bitcoin wallets
 
-This document describes how to score the outcomes of transacting on Bitcoin, in particular privacy outcomes. This is the basis for automating various decisions delegated by the user to the wallet.
+This document describes how to score the outcomes of transacting on Bitcoin, in particular privacy outcomes. This is the basis for automating various decisions delegated by the user to the wallet. It sets out the requirements on the cost function, and the general optimization framework in which the wallet uses it, including its pure and mixed strategies.
 
 ## Preliminaries
 
