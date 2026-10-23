@@ -20,10 +20,15 @@
     "fonts",
     "python",
     "networking-terms",
+    "author-names",
     "bitcoin-privacy",
     "repo-tooling"
   ],
   "dictionaryDefinitions": [
+    {
+      "name": "author-names",
+      "path": "./cspell/author-names.txt"
+    },
     {
       "name": "bitcoin-privacy",
       "path": "./cspell/bitcoin-privacy.txt"

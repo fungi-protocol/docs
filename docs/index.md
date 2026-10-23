@@ -15,7 +15,7 @@ okf_version: "0.2"
   * [Block DAG](block-dag.md) - The validator blocks both tracks share, with their objects, nonce commitments and equivocation evidence, genesis, causal order and frontiers.
   * [🤖 Optimistic track: blocks and phase states](optimistic-track.md) - Unanimity and phase closure on the optimistic track, phase by phase.
   * [Recovery track](recovery-track.md) - How a stalled phase of the optimistic track turns into a recovery coalition formation proposal. Draft.
-* [🤖 Peer set reconciliation](set-reconciliation.md) - Pulling what a Merkle root commits to, naive reconciliation, unordered sets, and range and rateless reconciliation as optimizations.
+* [🤖 Peer set reconciliation](set-reconciliation.md) - Requesting hash preimages, naive reconciliation, unordered sets, and range and rateless reconciliation as optimizations.
 * [🤖 Protocol messages](protocol-messages.md) - The messages peers exchange, who sends them, when, and what each requires of its channel.
 * [🤖 Validity proofs](validity-proofs.md) - Selected design: proving outputs are covered by inputs through anonymous allocation registration.
 
