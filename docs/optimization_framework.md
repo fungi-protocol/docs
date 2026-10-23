@@ -75,6 +75,8 @@ The solver searches for sequences that lead to states with greater valuation. It
 
 Internalizing the expectations about a node's children into the node gives the node its own piecewise linear curve. Solving it for the time at which the next child is expected to have positive utility determines when to take that branch, unless new information invalidates the decision in the meantime.
 
+This makes a simple greedy loop sufficient. From the current state, the wallet finds the next action, i.e. the child of the root, that will become attractive soonest, waits for it to do so, and takes it. It then prunes that action's siblings, committing to the sub-tree below it. There can be multiple paths to the same outcome, for example through repeated actions or states that converge, so an implementation may share sub-trees and represent the tree as a DAG.
+
 ## Coin selection with objective costs
 
 The coin selection problem in Bitcoin is that of deciding which of the unspent transaction outputs available to a wallet should be used when constructing a new transaction. Coin selection is constrained by the desired outcomes of constructing a transaction. The simplest example of such an outcome is when the user is intending to make an on-chain payment: a transaction which includes an output whose value is the payment amount, and whose `scriptPubKey` is determined by the receiver. The most basic constraint then is that the payment output is included, giving control over those funds to the receiver.
