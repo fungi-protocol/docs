@@ -7,9 +7,11 @@ stale_after: 2026-10-31T00:00:00Z
 
 # Optimization framework for Bitcoin wallets
 
-This document describes how to score the outcomes of transacting on Bitcoin, in particular privacy outcomes. This is the basis for automating various decisions delegated by the user to the wallet. It sets out the general approach to implementing the wallet's strategy, which is to generate decisions and evaluate them, and the requirements this places on the cost function. Unlike the protocols, which are normative, the strategy is a recommendation, and can't be enforced.
+This document describes how to score the outcomes of transacting on Bitcoin, in particular privacy outcomes. This is the basis for automating various decisions delegated by the user to the wallet.
 
-## Preliminaries
+🤖 It sets out the general approach to implementing the wallet's strategy, which is to generate decisions and evaluate them, and the requirements this places on the cost function. Unlike the protocols, which are normative, the strategy is a recommendation, and can't be enforced.
+
+## 🤖 Preliminaries {#preliminaries}
 
 Automating the decisions delegated to a wallet is an optimization problem, and every optimization problem has a cost function.
 
@@ -27,7 +29,7 @@ The wallet doesn't simply follow the best pure strategy. If it did, an adversary
 
 A cost function for the mixed strategy exists, but it is a more complicated mathematical object, which this document doesn't define or study. It only describes how the mixed strategy is played.
 
-## Wallet states and actions
+## 🤖 Wallet states and actions {#wallet-states-and-actions}
 
 The input domain of the cost function is *wallet states*. A wallet state includes the wallet's confirmed and unconfirmed transactions, current observations and beliefs, policy parameters, and a queue of *intents*.
 
@@ -72,11 +74,11 @@ Framed as an optimization problem, coin selection aims to minimize transaction c
 
 The immediate costs of some action may not represent its long term consequences. Internalizing expectations of the future into the cost of an action makes optimization simpler, since decisions can be evaluated one step at a time.
 
-Abstractly, one might recursively consider all actions that may follow any particular state. An expected cost can be derived by first assigning a cost to each terminal state, then weighting it according to a probability distribution. Adding these costs to the cost of the actions which immediately precede the terminal states internalizes future expected costs, and this can be propagated all the way back to the immediately available actions.
+🤖 Abstractly, one might recursively consider all actions that may follow any particular state. An expected cost can be derived by first assigning a cost to each terminal state, then weighting it according to a probability distribution. Adding these costs to the cost of the actions which immediately precede the terminal states internalizes future expected costs, and this can be propagated all the way back to the immediately available actions.
 
 Unfortunately, enumerating every contingency like this, even if the depth is restricted, is not only intractable, but often hard to define. Assigning probabilities can also be tricky. Due to these challenges, in practice simplified models are instead used to internalize such future costs into the cost of the immediately available actions. Although this might not account for everything that may eventually happen, that isn't really a goal worth pursuing so long as relative comparisons between alternatives are made possible.
 
-### Bracketed evaluation under incomplete information
+### 🤖 Bracketed evaluation under incomplete information {#bracketed-evaluation-under-incomplete-information}
 
 We model privacy liabilities as terms that only reduce the evaluation of a particular state, and can only be reduced as more information is revealed. This means that for every state we can derive a best case and worst case cost. The worst case is based on the information already available: it assumes that no other party contributes anything of value to the wallet, apart from the adjustments of any co-spend proposals in effect, which are guaranteed if the leaf materializes. The best case assumes they act optimally for the wallet, providing perfect cover, and is obtained by simply omitting any privacy related penalties from the sum. Its use is pruning: a leaf whose best case is still unacceptable can be discarded, as in branch and bound.
 
@@ -108,7 +110,7 @@ For the purposes of this document a *payment* will mean a net transfer of funds 
 
 An *intent* is a concrete representation of the goal of creating some output (or input, in which case the goal is the destruction of some unspent output) before some deadline. The deadline can refer to the transmission of a signed transaction to the recipient out of band, broadcasting the transaction, or its confirmation in a block. For simplicity, and without loss of generality, output creation intents will be assumed to correspond to payments but that isn't necessarily the case (for example funding a lightning channel). We will assume intents are made known to the wallet some time in advance of the deadline.
 
-The change in the balance of a wallet resulting from a transaction, negated, is its *objective cost*: positive when the balance decreases, and negative when it increases, for example when receiving a payment. In contrast, the utility obtained from a transaction confirming may include subjective terms as well. Subjective costs inherently depend on beliefs or preferences, and are the basis for any surplus created from transactions as any redistribution of on chain funds is necessarily zero sum.
+🤖 The change in the balance of a wallet resulting from a transaction, negated, is its *objective cost*: positive when the balance decreases, and negative when it increases, for example when receiving a payment. In contrast, the utility obtained from a transaction confirming may include subjective terms as well. Subjective costs inherently depend on beliefs or preferences, and are the basis for any surplus created from transactions as any redistribution of on chain funds is necessarily zero sum.
 
 Reliably confirming transactions at the lowest possible feerate before the deadline of any payments it realizes is not feasible, because predicting future feerates is a market prediction problem. Attempting to confirm as close to the deadline as possible can incur additional costs due to the variability of fees, or risk missing the deadline. If payment deadlines are missed, the utility obtained from making the payments may be diminished. Some risk of missing the deadline or overpaying fees is always inherent.
 
@@ -170,11 +172,15 @@ What is possible to say is that this cost can be quantified concretely by accoun
 
 ### Payment urgency
 
-As described in abstract terms above, a per intent deadline or confirmation target similar to the standard user experience for determining feerates can be used to control the time sensitivity of specific actions. More generally, every term of the cost function and every intent in the queue may depend on time, and how it does may depend on what is being evaluated. This time dependence is modeled as piecewise linear offsets to values computed independently of time, so the cost function returns a family of piecewise linear functions of time, one per term. Evaluating them at a given time is just a matter of indexing them and taking a sum, but treating them explicitly as piecewise linear functions makes it possible to solve for intercepts.
+As described in abstract terms above, a per intent deadline or confirmation target similar to the standard user experience for determining feerates can be used to control the time sensitivity of specific actions.
 
-The privacy sensitivity of a transaction determines whether the preferred behavior is to execute a payment even if privacy is sacrificed as the deadline approaches, or whether it's better to miss the deadline or even forgo the transaction entirely if the payment cannot be made privately. This is determined by the shape of the intent's utility curve. If it plateaus or turns downwards, then a payment that cannot be made privately should not be made at all. If it keeps rising, then at some point the utility of making the payment dominates any privacy liabilities, which is how a hard deadline is modeled.
+🤖 More generally, every term of the cost function and every intent in the queue may depend on time, and how it does may depend on what is being evaluated. This time dependence is modeled as piecewise linear offsets to values computed independently of time, so the cost function returns a family of piecewise linear functions of time, one per term. Evaluating them at a given time is just a matter of indexing them and taking a sum, but treating them explicitly as piecewise linear functions makes it possible to solve for intercepts.
 
-### Global privacy budget
+The privacy sensitivity of a transaction determines whether the preferred behavior is to execute a payment even if privacy is sacrificed as the deadline approaches, or whether it's better to miss the deadline or even forgo the transaction entirely if the payment cannot be made privately.
+
+🤖 This is determined by the shape of the intent's utility curve. If it plateaus or turns downwards, then a payment that cannot be made privately should not be made at all. If it keeps rising, then at some point the utility of making the payment dominates any privacy liabilities, which is how a hard deadline is modeled.
+
+### 🤖 Global privacy budget {#global-privacy-budget}
 
 Finally, a global (i.e. per wallet, not per intent or transaction) budget is used to normalize all metrics so that the costs of actions with different privacy outcomes are directly comparable. The budget has two parts: the *budget rate* $p$, a percentage chosen by the user, and the *remaining budget* $B$, an amount in satoshis. Only funds received at external addresses add to the remaining budget, which grows by $p$ times their value, and privacy-motivated expenses are deducted from it.
 
@@ -232,13 +238,13 @@ With such a setup, it is reasonable to define honest parties as being indifferen
 
 Note that this does allow the evaluation to change. For example, if one party's choice of inputs is already committed, and they then learn of the inputs of the other parties, this may change their evaluation of which set of outputs to add in the next stage of the protocol. Monotonicity ensures that this evaluation can only improve in the critical section of the protocol.
 
-This is a substantive restriction. Many sensible cost functions don't satisfy it, for example one that is averse to a certain kind of counterparty, and such cost functions aren't compatible with these protocols. It is required because transactions are signed with `SIGHASH_ALL`: if any party defects, all other parties need to renegotiate and retry transaction construction, which is costly, and defections can cascade. Monotonicity is therefore required for liveness guarantees to be incentive compatible. Byzantine parties may not respect it at all.
+🤖 This is a substantive restriction. Many sensible cost functions don't satisfy it, for example one that is averse to a certain kind of counterparty, and such cost functions aren't compatible with these protocols. It is required because transactions are signed with `SIGHASH_ALL`: if any party defects, all other parties need to renegotiate and retry transaction construction, which is costly, and defections can cascade. Monotonicity is therefore required for liveness guarantees to be incentive compatible. Byzantine parties may not respect it at all.
 
 <!-- cspell:words semilattice -->
 
-Accepting a coalition formation proposal means agreeing to all compatible actions by all parties, effectively declaring that the wallet's cost function is monotone with respect to anything outside of the restrictions agreed to upfront. The protocols also exploit this to make the transaction construction state a join semilattice (see [concurrent PSBT construction](psbt-concurrent.md)). Both the state and the game theory are needed for transaction construction to succeed: safety is inherent in `SIGHASH_ALL`, but liveness is fragile to crash and byzantine faults.
+🤖 Accepting a coalition formation proposal means agreeing to all compatible actions by all parties, effectively declaring that the wallet's cost function is monotone with respect to anything outside of the restrictions agreed to upfront. The protocols also exploit this to make the transaction construction state a join semilattice (see [concurrent PSBT construction](psbt-concurrent.md)). Both the state and the game theory are needed for transaction construction to succeed: safety is inherent in `SIGHASH_ALL`, but liveness is fragile to crash and byzantine faults.
 
-### Commitment
+### 🤖 Commitment {#commitment}
 
 Co-spend proposals may be made or accepted in anticipation of a good outcome, but accepting a coalition formation proposal is binding: defecting has reputational costs, since other peers may discount the UTXOs of a party that fails to sign. Accepting a coalition formation proposal therefore commits the wallet to the sub-tree it belongs to, and requires that this sub-tree has at least $k$ acceptable leaves (see [Preliminaries](#preliminaries)), i.e. at least $k$ contingencies to select from for that transaction. These must remain acceptable for long enough that a run of the protocol can be expected to complete. If they are only briefly acceptable, then as that window closes, a payment whose deadline is about to be missed may have to be made unilaterally instead, which may in turn leave the remaining intents without any urgency, so that it's better to wait.
 

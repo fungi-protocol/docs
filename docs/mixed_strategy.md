@@ -5,7 +5,7 @@ status: draft
 stale_after: 2026-11-06T00:00:00Z
 ---
 
-# Mixed strategy
+# 🤖 Mixed strategy
 
 This chapter recommends how to compose a mixed strategy out of the cost of pure strategies, as set out in the [Optimization framework](optimization_framework.md) chapter, using the concrete monotone terms of the evaluation in the *Concrete cost function* chapter.
 
