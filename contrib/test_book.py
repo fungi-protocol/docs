@@ -44,6 +44,75 @@ def test_contents_keep_descriptions_under_one_title():
     )
 
 
+NESTED = """# Part
+
+* [One](one.md) - The first chapter.
+  * [Two](sub/two.md) - Under the first.
+    * [Three](three.md) - Under the second.
+
+  * [Four](four.md) - Under the first, after a blank line.
+* [Five](five.md) - The last chapter.
+"""
+NESTED_CHAPTERS = {"one.md", "sub/two.md", "three.md", "four.md", "five.md"}
+
+
+def test_summary_nests_indented_entries_under_the_entry_above():
+    assert book.summary(NESTED, NESTED_CHAPTERS) == (
+        "# Summary\n\n"
+        "[Introduction](README.md)\n"
+        "[Contents](contents.md)\n\n"
+        "# Part\n\n"
+        "- [One](one.md)\n"
+        "  - [Two](sub/two.md)\n"
+        "    - [Three](three.md)\n"
+        "  - [Four](four.md)\n"
+        "- [Five](five.md)\n"
+    )
+
+
+def test_contents_keep_the_nesting():
+    assert book.contents(NESTED) == (
+        "# Contents\n\n"
+        "## Part\n\n"
+        "* [One](one.md) - The first chapter.\n"
+        "  * [Two](sub/two.md) - Under the first.\n"
+        "    * [Three](three.md) - Under the second.\n\n"
+        "  * [Four](four.md) - Under the first, after a blank line.\n"
+        "* [Five](five.md) - The last chapter.\n"
+    )
+
+
+@pytest.mark.parametrize(
+    "index, error",
+    [
+        ("# Part\n\n  * [One](one.md)\n", "no entry above"),
+        ("  * [One](one.md)\n", "no entry above"),
+        ("* [One](one.md)\n\n# Part\n\n  * [Two](sub/two.md)\n", "no entry above"),
+        ("# Part\n\n* [One](one.md)\n    * [Two](sub/two.md)\n", "more than one level"),
+        ("# Part\n\n* [One](one.md)\n * [Two](sub/two.md)\n", "odd indentation"),
+        ("# Part\n\n* [One](one.md)\n   * [Two](sub/two.md)\n", "odd indentation"),
+        ("# Part\n\n* [One](one.md)\n\t* [Two](sub/two.md)\n", "unexpected line"),
+        ("# Part\n\n* [One](one.md)\n  # Sub\n", "unexpected line"),
+    ],
+)
+def test_summary_rejects_entries_it_cannot_nest(index, error):
+    with pytest.raises(ValueError, match=error):
+        book.summary(index, CHAPTERS)
+
+
+def test_summary_rejects_a_nested_chapter_listed_twice():
+    with pytest.raises(ValueError, match="repeats a chapter"):
+        book.summary(
+            "# Part\n\n* [One](one.md)\n  * [Two](sub/two.md)\n  * [Again](one.md)\n",
+            CHAPTERS,
+        )
+
+
+def test_summary_rejects_a_nested_entry_that_is_not_a_chapter():
+    with pytest.raises(ValueError, match="not a chapter"):
+        book.summary("# Part\n\n* [One](one.md)\n  * [Gone](gone.md)\n", CHAPTERS)
+
+
 @pytest.mark.parametrize(
     "line, error",
     [
