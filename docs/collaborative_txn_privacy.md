@@ -1024,7 +1024,7 @@ Until such time, be skeptical of claims that PayJoin or even CoinJoin provide pr
 
 [^sudoku]: K. Atlas, [*Weak Privacy Guarantees for SharedCoin Mixing Service*](https://www.coinjoinsudoku.com/advisory/) (CoinJoin Sudoku)
 
-[^radix]: https://colab.research.google.com/drive/1We_FvfX_Ob9BapFW3X_By9vTtxUrt3pm
+[^radix]: The *Radix CoinJoin Denominations* chapter.
 
 [^syverson]: P. Syverson, [*Why I'm not an entropist*](https://www.freehaven.net/anonbib/cache/entropist.pdf)
 
