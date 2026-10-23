@@ -61,12 +61,12 @@
             '';
         # lychee loads CA certificates to build its HTTP client even with --offline.
         links = pkgs.runCommand "links" { nativeBuildInputs = [ pkgs.lychee pkgs.cacert ]; } ''
-          # The site is served from /docs/, so a link from the root leaves it.
-          mkdir root && ln -s ${site} root/docs
-          # The 404 page needs <base href="/docs/"> for browsers to find its assets.
+          # The site is served from /docs-draft/, so a link from the root leaves it.
+          mkdir root && ln -s ${site} root/docs-draft
+          # The 404 page needs <base href="/docs-draft/"> for browsers to find its assets.
           # Lychee does not check this, so verify it separately.
-          grep -qF '<base href="/docs/">' root/docs/404.html
-          lychee --offline --include-fragments --no-progress --root-dir $PWD/root root/docs
+          grep -qF '<base href="/docs-draft/">' root/docs-draft/404.html
+          lychee --offline --include-fragments --no-progress --root-dir $PWD/root root/docs-draft
           touch $out
         '';
       };
