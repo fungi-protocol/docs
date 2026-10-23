@@ -4,6 +4,8 @@ This repository contains documents that describe a family collaborative Bitcoin 
 
 > [!NOTE]
 > **Work in progress**: most chapters are still under review. See the [open pull requests](https://github.com/fungi-protocol/docs/pulls) for material being drafted.
+>
+> Chapters, sections or paragraphs marked with 🤖 are LLM output. They have been partly verified but have not yet been edited or rewritten as necessary, and should be considered a working draft.
 
 ## Fungi protocol suite
 
