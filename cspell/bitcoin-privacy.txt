@@ -29,17 +29,11 @@ unlinkability
 UTXO
 xpub
 ANYONECANPAY
-CRDT
 globalseed
 joinpsbts
 keydata
 Kickstarter
 nlocktime
-psbtv
 reserialization
-standardness
-txns
-unioned
 unrepresentable
-unshuffled
 valuedata
