@@ -23,7 +23,7 @@ Every term is a piecewise linear function of time, and is known to be either pri
 
 The strategy is implemented by generating decisions and evaluating them. Tactics generate the decision tree from the wallet state. The evaluation is mostly defined in terms of pure strategies, because these are easier to make transparent: a sum of terms, each labelled as privacy related or not, and each a piecewise linear function of time. Pruning and the decision loop then turn these evaluations into the wallet's mixed strategy.
 
-The wallet doesn't simply follow the best pure strategy. If it did, an adversary able to predict the wallet's state could also predict its choices. Instead it plays a *mixed strategy*: it chooses uniformly at random among the $k$ best pure strategies, where $k$ is a parameter. This adds noise to the wallet's revealed preferences. The decision tree models the pure strategies explicitly, and the wallet randomizes over them. What counts as the $k$ best may need refining, for example requiring them to be sufficiently dissimilar, or sampling non-uniformly from a larger set, with lower probability for similar choices.
+The wallet doesn't simply follow the best pure strategy. If it did, an adversary able to predict the wallet's state could also predict its choices. Instead it plays a *mixed strategy*, a random choice among pure strategies. The [Mixed strategy](mixed_strategy.md) chapter recommends how to compose one.
 
 A cost function for the mixed strategy exists, but it is a more complicated mathematical object, which this document doesn't define or study. It only describes how the mixed strategy is played.
 
@@ -50,15 +50,9 @@ Actions include announcements and negotiation, not just the steps of transaction
 - accepting a co-spend proposal, or a coalition formation proposal
 - adding auxiliary inputs and outputs to a committed transaction, and signing it
 
-How the tree is built is part of the strategy, and is described in the *Strategy* chapter.
+How the tree is built is part of the strategy, and is described in the *Tactics* chapter.
 
-#### Decision loop
-
-The solver searches for sequences that lead to states with greater valuation. It values the leaves first, then propagates their brackets and the tree level expectation toward the root. The tree level expectation internalizes the optionality of the leaves into their parent: it is the mean of the worst cases of the $k$ least worst leaves below that parent, since the mixed strategy chooses uniformly among them. This ignores that leaves aren't independent, as they may share actions. This reduces a plan involving many contingent future actions to comparisons among the actions available now.
-
-Internalizing the expectations about a node's children into the node gives the node its own piecewise linear curve. Solving it for the time at which the next child is expected to have positive utility determines when to take that branch, unless new information invalidates the decision in the meantime.
-
-This makes a simple greedy loop sufficient. From the current state, the wallet finds the next action, i.e. the child of the root, that will become attractive soonest, waits for it to do so, and takes it. It then prunes that action's siblings, committing to the sub-tree below it. This is part of why the cost of a pure strategy is a transparent sum of piecewise linear terms: crossing times can be solved for, and the brackets derived efficiently at predicted future times. Since the predicted times are themselves uncertain, the cost brackets can also be augmented with time brackets, i.e. bounds on those predicted times. There can be multiple paths to the same outcome, for example through repeated actions or states that converge, so an implementation may share sub-trees and represent the tree as a DAG.
+How the wallet chooses among the pure strategies in the tree, and when it acts, is described in the [Mixed strategy](mixed_strategy.md) chapter.
 
 ## Coin selection with objective costs
 
