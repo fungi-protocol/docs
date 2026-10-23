@@ -1,18 +1,18 @@
 ---
 type: Specification
 title: Peer set reconciliation
-description: Requesting hash preimages, naive reconciliation, unordered sets, and range and rateless reconciliation as optimizations of the same mechanism.
+description: Requesting hash preimages, naive reconciliation, sets outside the block DAG, and range and rateless reconciliation as optimizations of the same mechanism.
 status: draft
 stale_after: 2027-04-15T00:00:00Z
 ---
 
-<!-- cspell:words Alizadeh Aljoscha Amsden ECMH getdata Gilad iblt Kleppmann mathbin Minisketch multiset pinsketch RBSR RIBLT Sourav Yossi Zhuolun -->
+<!-- cspell:words Alizadeh Aljoscha Amsden ECMH getdata Gilad iblt Kleppmann mathbin Minisketch multiset pinsketch RBSR RIBLT Yossi -->
 
 # 🤖 Peer set reconciliation
 
 ## Push gossip
 
-[Epidemic gossip](channels.md#dissemination-methods) disseminates data by pushing it: a peer that learns of a new message passes it on to its neighbors, and they pass it on in turn. Every peer eventually receives every message. Until then, a peer waits for messages to be pushed to it.
+[Epidemic gossip](channels.md#dissemination-methods) disseminates data by pushing it: a peer that learns of a new message passes it on to its neighbors, and they pass it on in turn. Every peer eventually receives every message, assuming the required connectivity and delivery. A peer can also request missing messages by hash or reconcile its set with another peer's set, as described below.
 
 🤖 Small messages are pushed eagerly to neighbors. A block is pushed as just its header, expecting the receiver to already know its Merkle tree.
 
@@ -35,6 +35,8 @@ Reconciliation uses [peer to peer channels](transport-interfaces.md), independen
 
 Sets are represented by sparse Merkle trees keyed by the cryptographic hash of each referenced object. The key is its set identity; repeated insertion is idempotent. The tree commits to an unordered set, independently of arrival order or the peer that supplied an element.
 
+The DAG does not order messages, so its message sets are unordered. Where an order is wanted, for example if a block's parents are committed to in an arbitrary order, the commitment is to a list instead: a Merkle tree over positions, like the Merkle tree of a Bitcoin block, which commits to an ordered list of transactions. Ordered versus unordered is the distinction between a list and a set. Whether a set is included in the block DAG determines its consistency guarantees, not its order.
+
 Empty subtrees have a canonical representation. A singleton subtree is represented by its leaf rather than a chain of otherwise empty internal nodes, following the compression described for Libra's sparse Merkle trees.[^libra] Leaf, internal-node and empty-node encodings must be unambiguous and domain separated. The exact encoding and hash function are pending choices.
 
 Every message sent to a neighbor carries the relevant set root. An advertised root adds that set to the reconciliation allow-list for that neighbor. Reconciliation requests are scoped to such an advertised set, or to a subtree established during its reconciliation. Advertising a root authorizes reconciliation; it does not establish that the contents are valid or available.
@@ -43,9 +45,9 @@ Immutable sets coexist with changing inventory sets. For example, a block DAG ca
 
 An exchange identifies an immutable root. Later advertisements can introduce newer roots without changing the meaning of an exchange already in flight. Obtained messages are shared across exchanges and neighbors through the local content-addressed inventory.
 
-## Unordered sets
+## Sets outside the block DAG
 
-The same mechanism can exchange the Merkle roots of messages that are not yet ordered in blocks. Such sets have no consistency guarantees: two peers' sets can differ, and nothing says they should converge at any particular point.
+The same mechanism can exchange the Merkle set roots of messages that are not in any block. These sets are ephemeral and have no protocol consistency guarantees; they are just used to trigger set reconciliation.
 
 * In the peer to group context, this is analogous to a mempool: contributions to a transaction construction session that no block includes yet.
 * In the peer to world context, this is the order book of coalition formation: listen advertisements, co-spend proposals, and their ownership proofs.
@@ -131,10 +133,6 @@ In either case, a narrowing range reply stops transmission for the parent scope.
 
 Decoding beyond capacity can return a false candidate rather than an explicit failure. Sketch results are provisional until checked against the committed data. A sampled-cell construction must account for false recovery before propagating it through peeling; checking only the final root detects failure but does not bound wasted decoding work. Mapping message hashes into smaller field elements also requires collision handling. These details remain part of the sketch profile, not changes to the DAG semantics.
 
-### Relation to asynchronous data dissemination
-
-Asynchronous Data Dissemination (ADD) distributes a common message $M$ from at least $f+1$ honest holders to all honest nodes, with communication $O(n|M|+n^2)$ under $f<n/3$.[^add] It provides a benchmark for distributing transfer work and bounding redundant communication under adversarial requests. Its starting condition differs from reconciliation between peers with overlapping inventories. An ADD-style transfer is a possible alternative for large immutable batches, subject to its holder and fault assumptions; it does not exploit sparse set differences directly.
-
 ## Resource bounds and validation
 
 Outstanding neighbor exchanges, speculative decoder work and retained unresolved roots require explicit bounds. An advertised root scopes requests but does not establish that its set is small or admissible. Duplicate data does not earn repeated processing rights. Retrieved contents are checked against commitments; application validity is checked by the consuming protocol.
@@ -158,5 +156,3 @@ The reconciliation mechanism reports completion for a specified scope. Whether t
 [^ephemeral-ecmh]: [Ephemeral ECMH](https://nothingmuch.github.io/ephemeral-ecmh/), on whether small elliptic curves can serve as the checksum in rateless set reconciliation, against adversarially chosen items, with a public beacon instead of a shared secret.
 
 [^minisketch]: [Minisketch: an optimized library for BCH-based set reconciliation](https://github.com/bitcoin-core/minisketch), including its mathematical explanation and incremental-decoding discussion.
-
-[^add]: Sourav Das, Zhuolun Xiang and Ling Ren. [Asynchronous Data Dissemination and its Applications](https://eprint.iacr.org/2021/777).
