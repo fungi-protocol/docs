@@ -54,3 +54,20 @@ taptree
 unlinkability
 UTXO
 xpub
+
+# Concurrent PSBT construction
+ANYONECANPAY
+CRDT
+globalseed
+joinpsbts
+keydata
+kickstarter
+nlocktime
+psbtv
+reserialization
+standardness
+txns
+unioned
+unrepresentable
+unshuffled
+valuedata
