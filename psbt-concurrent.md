@@ -54,7 +54,7 @@ BIP 370 introduces the notion of a [unique ID](https://github.com/bitcoin/bips/b
 
 The effects of a transaction on the distribution of money are determined by its effects the UTXO set: which outputs does it spend and create. However, with regards to money changing hands, we would like to treat equivalent outputs as interchangeable by disregarding the specific outpoints by which specific coins are identified.
 
-Both notions of identity ensure that PSBTs with the same ID have the same effects, but it is not true that PSBTs with the same effects will have the same ID, since depends on the specific order of the inputs and outputs, among other things. By abstracting over these details we obtain a more general notion of PSBT identity than in BIP 370. The details of how to compute this ID are [provided below](#unique-identifiers).
+Both notions of identity ensure that PSBTs with the same ID have the same effects, but it is not true that PSBTs with the same effects will have the same ID, since depends on the specific order of the inputs and outputs, among other things. By abstracting over these details we obtain a more general notion of PSBT identity than in BIP 370. The details of how to compute this ID are [provided below](#unique-identification-of-unordered-psbts).
 
 ### Combiner role and transaction effects
 
@@ -120,7 +120,7 @@ This ensures that repeated addition of the same output is idempotent, but that i
 
 Outputs with an identical `PSBT_OUT_SCRIPT` can be merged, and their values summed together after `PSBT_GLOBAL_TX_UNORDERED` is cleared and an order is determined, using BIP 370 construction rules. See the next section on ordering.
 
-### Ordering inputs and ouputs
+### Ordering inputs and outputs
 
 - TODO: unique ID can be derived by sorting even if sort key is empty, but txn finalization must not be unless all sort keys are provided explicitly (regardless of DETERMINISTIC)
 - add section for unique ID derivation a la BIP 370
@@ -137,7 +137,7 @@ If any `PSBT_IN_SORT_KEY` and `PSBT_OUT_SORT_KEY` are omitted, the global `PSBT_
 
 If any sort key is missing, ordering can only proceed after `PSBT_GLOBAL_SORT_SEED` is set.
 
-A *Creator* creating an unordered transaction SHOULD set `PSBT_GLOBAL_SORT_DETERMINISTIC` to enure consistent ordering rules are enforced.
+A *Creator* creating an unordered transaction SHOULD set `PSBT_GLOBAL_SORT_DETERMINISTIC` to ensure consistent ordering rules are enforced.
 
 For sufficiently large transactions the ordering itself (and therefore the per input signatures) is a cryptographically binding commitment to the `PSBT_GLOBAL_SORT_SEED` value. This is because the entropy of the ordering of $n$ elements is $log_2(n!)$. For reference, $\log_2(35!) > 128$, $\log_2(25!) > 80$, and $\log_2(15!) > 40$.
 
@@ -165,7 +165,7 @@ If `SIGHASH_ANYONECANPAY` or `SIGHASH_NONE` is used by a signer, the signature i
 
 At minimum any such signature could lead to txid malleability, and so is not composable with any protocol that requires pre-signed descendant transactions.
 
-Furthermore, members of this equivalence class of transactions may differ substantially in their effects, potentially leading to loss of funds, not only due to byzantine faults but even omission faults. To ensure undesired transactions are not inadvertantly authorized, the full output list should always be comitted to using `SIGHASH_ALL`.
+Furthermore, members of this equivalence class of transactions may differ substantially in their effects, potentially leading to loss of funds, not only due to byzantine faults but even omission faults. To ensure undesired transactions are not inadvertently authorized, the full output list should always be committed to using `SIGHASH_ALL`.
 
 Rationale: No known use cases for such flags in true multiparty transactions (i.e. three or more parties). If necessary, a carve out can be specified in a separate document (e.g. for kickstarter-style crowdfunding with `SIGHASH_ANYONECANPAY|SIGHASH_ALL` signing).
 
@@ -173,11 +173,11 @@ Rationale: No known use cases for such flags in true multiparty transactions (i.
 
 Parties which neither send nor receive payments within a transaction can safely sign so long as all of their intended outputs are covered by the input signature. This may require signing more than once if some messages are delayed, but TODO see also termination via explicit fee contributions.
 
-If there is any net transfer between the parties, it is insufficient for a sender (any party that makes an outgoing payment to another party within the transaction regardless of their net send/receive balance) to rely only on the signature comitting to the outputs they added, because some of their funds will be used by other parties and their actions need to have been registered as well.
+If there is any net transfer between the parties, it is insufficient for a sender (any party that makes an outgoing payment to another party within the transaction regardless of their net send/receive balance) to rely only on the signature committing to the outputs they added, because some of their funds will be used by other parties and their actions need to have been registered as well.
 
 Before signing, every sender must wait until it has positive confirmation of the PSBT's unique ID (which commits to the full output set) from every one of its receivers, and that in every case the confirmed ID matches the one they derive locally.
 
-Every recevier whose net balance is non-negative (they may be a sender too but they receive at least as much as they send) can confirm the unique PSBT ID to their respective senders output set contains all of their added outputs.
+Every receiver whose net balance is non-negative (they may be a sender too but they receive at least as much as they send) can confirm the unique PSBT ID to their respective senders output set contains all of their added outputs.
 
 Every receiver whose balance is net negative (they send more than they receive) must wait for confirmation from all receivers for whom it is a sender before it confirms the unique ID to the senders for whom it is a receiver.
 
@@ -205,7 +205,7 @@ Assuming [`SIGHASH_ALL` is used](#divergence-and-sighash-flags), it's sufficient
 
 This optionality extends the `PSBT_IN_UNIQUE_ID` field, a removal and re-insertion with incompatible data will either cause combination to fail due to a mismatch or succeed by ignoring the removal and treating the insertion as idempotent, but otherwise diverge.
 
-While this would allow limited interoperability among clients, that is not reccomended, and is described as an argument for the safety of omitting any removal related functionality. Implementations which omit removal functionality SHOULD fail or at least warn if combining a PSBT that signals removal.
+While this would allow limited interoperability among clients, that is not recommended, and is described as an argument for the safety of omitting any removal related functionality. Implementations which omit removal functionality SHOULD fail or at least warn if combining a PSBT that signals removal.
 
 TODO: while combine is monotone of data / PSBT fields including removals, it is no longer monotone in transaction effects. This does not present a safety issue if [only `SIGHASH_ALL` is used](#divergence-and-sighash-flags).
 
@@ -233,7 +233,7 @@ advisory fields: `MAX_WEIGHT_PER_PARTICIPANT`, `MAX_TRANSACTION_WEIGHT` (default
 
 if every participant effectively restricts the domain by respecting the limit the least upper bound is guaranteed not to exceed the limit making the join valid.
 
-assumes the number of partcipants can be restricted via some external mechanism.
+assumes the number of participants can be restricted via some external mechanism.
 
 #### Termination
 
