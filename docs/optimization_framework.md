@@ -7,7 +7,7 @@ stale_after: 2026-10-31T00:00:00Z
 
 # Optimization framework for Bitcoin wallets
 
-This document describes how to score the outcomes of transacting on Bitcoin, in particular privacy outcomes. This is the basis for automating various decisions delegated by the user to the wallet. It sets out the requirements on the cost function, and the general optimization framework in which the wallet uses it, including its pure and mixed strategies.
+This document describes how to score the outcomes of transacting on Bitcoin, in particular privacy outcomes. This is the basis for automating various decisions delegated by the user to the wallet. It sets out the general approach to implementing the wallet's strategy, which is to generate decisions and evaluate them, and the requirements this places on the cost function. Unlike the protocols, which are normative, the strategy is a recommendation, and can't be enforced.
 
 ## Preliminaries
 
@@ -20,6 +20,8 @@ A *pure strategy* is a complete plan: a sequence of actions leading from the cur
 - payoffs from completing goals, such as making a payment
 
 Every term is a piecewise linear function of time, and is known to be either privacy related or not. A pure strategy is evaluated at a point in time by evaluating each of its terms at that time and taking their sum.
+
+The strategy is implemented by generating decisions and evaluating them. Tactics generate the decision tree from the wallet state. The evaluation is mostly defined in terms of pure strategies, because these are easier to make transparent: a sum of terms, each labelled as privacy related or not, and each a piecewise linear function of time. Pruning and the decision loop then turn these evaluations into the wallet's mixed strategy.
 
 The wallet doesn't simply follow the best pure strategy. If it did, an adversary able to predict the wallet's state could also predict its choices. Instead it plays a *mixed strategy*: it chooses uniformly at random among the $k$ best pure strategies, where $k$ is a parameter. This adds noise to the wallet's revealed preferences. The decision tree models the pure strategies explicitly, and the wallet randomizes over them. What counts as the $k$ best may need refining, for example requiring them to be sufficiently dissimilar, or sampling non-uniformly from a larger set, with lower probability for similar choices.
 
