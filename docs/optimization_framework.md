@@ -48,28 +48,7 @@ Actions include announcements and negotiation, not just the steps of transaction
 - accepting a co-spend proposal, or a coalition formation proposal
 - adding auxiliary inputs and outputs to a committed transaction, and signing it
 
-#### Constructing the tree
-
-The tree is built bottom up, starting with complete outcomes and working back towards the immediate actions that would lead to them:
-
-1. Partition the queue of intents heuristically. Each partition is an outcome: a set of batches to execute.
-2. For each outcome, select coins batch by batch, possibly shuffling. Coin selection may optimize or be fully randomized, and interactive incoming payments can be treated as pseudo-inputs. This ensures that the outcome has a positive surplus and can be executed.
-3. Decompose each surplus into radix denominations, enumerating the possibilities by brute force.
-4. Extend outcomes by selecting coins from the order book.
-
-This generates many independent outcomes, each complete and balanced, each made up of disjoint batches. Typically there will be one greedy batch, or one small batch for a unilateral fallback if an intent becomes urgent.
-
-Order book coins that would increase the number of counterfactual paths into the wallet's new outputs are especially valuable (see *Max flow based counterfactual path estimation*). Such a coin adds paths as a co-input when it descends from the origins of the wallet's own inputs. However, a co-spend proposal made from the wallet's input that the paths are added to, naming such a coin, links the two, unless such proposals are already common. An outcome may still prefer such a selection, but the cost function should penalize co-spend proposals that leak the link in this way.
-
-The coins these outcomes share then guide the structure of the tree, as does each coin's luck, both now and at the next block, since the randomness beacon can be a block hash at some depth below the tip rather than the tip itself. Actions are scheduled least committal first, so the actions shared by the most outcomes end up nearest the root.
-
-Within a batch, inputs are added before outputs, and signatures come last. Inputs named in co-spend proposals are scheduled early, in particular those compatible with the most favorable outcomes. *Auxiliary* inputs, which aren't named in any co-spend proposal, are added using the weight unit credits of these initial inputs. Whether to include them can be decided after observing the other users' initial inputs, i.e. the full list of UTXOs in the coalition formation proposal.
-
-Each path down the tree is a plan, i.e. a pure strategy. Since announcements and co-spend proposals are actions like any other, they are planned as well. New alternatives can be added to the tree, or a whole new tree can be computed from any state and combined with the current one as further alternatives.
-
-Because the tree is potentially large and costly to generate and evaluate, most of it is generated up front. It is then updated as co-spend proposals, coalition formation proposals, and the auxiliary inputs of committed transactions are learned.
-
-The expected durations of steps can be annotated along each path. This takes the time dependence of the leaves into account, so that actions are scheduled early enough.
+How the tree is built is part of the strategy, and is described in the *Strategy* chapter.
 
 #### Decision loop
 
