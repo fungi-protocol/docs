@@ -1,0 +1,3 @@
+[default.extend-words]
+# Groth16, the proof system named after Jens Groth.
+Groth = "Groth"
