@@ -1,6 +1,8 @@
 [default.extend-identifiers]
 # Author of The Byzantine Generals Problem.
 Pease = "Pease"
+# Author of Asymmetric Distributed Trust.
+Cachin = "Cachin"
 
 [default.extend-words]
 # Groth16, the proof system named after Jens Groth.
