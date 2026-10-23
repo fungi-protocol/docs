@@ -28,5 +28,5 @@ before = ["graphviz"]
 [output.html]
 additional-css = ["theme/diagrams.css"]
 git-repository-url = "https://github.com/fungi-protocol/docs"
-site-url = "/docs/"
+site-url = "/docs-draft/"
 additional-js = ["theme/nb-table.js"]
