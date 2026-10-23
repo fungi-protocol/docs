@@ -39,6 +39,7 @@ okf_version: "0.2"
 * [🤖 Mixed strategy](mixed_strategy.md) - How to compose a mixed strategy from the cost of pure strategies: randomization, time dependence, internalization and the decision loop.
 * [Tactics](tactics.md) - Generating the decision tree bottom up, with coin selection and change decomposition, and when to re-evaluate it.
   * [Bottom-up construction](bottom_up_construction.md) - Building the decision tree from the leaves: partitions of the intent queue, coin selection, change construction, order book coins, action sequences, and bracketing.
+  * [Radix CoinJoin Denominations](Denominations_and_gap_size_distributions.ipynb) - Why small Hamming weight denominations suit CoinJoin outputs, and how closely sums of a few of them approximate arbitrary amounts.
 
 # BIP Drafts
 

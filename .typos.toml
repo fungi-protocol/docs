@@ -1,4 +1,6 @@
 [default.extend-identifiers]
+# Mermaid class for Alice's cluster in the intersection diagram.
+aci = "aci"
 # Author of The Byzantine Generals Problem.
 Pease = "Pease"
 # Author of Asymmetric Distributed Trust.
