@@ -71,11 +71,13 @@ Because the tree is potentially large and costly to generate and evaluate, most 
 
 The expected durations of steps can be annotated along each path. This takes the time dependence of the leaves into account, so that actions are scheduled early enough.
 
+#### Decision loop
+
 The solver searches for sequences that lead to states with greater valuation. It values the leaves first, then propagates their brackets and the tree level expectation toward the root. The tree level expectation internalizes the optionality of the leaves into their parent: it is the mean of the worst cases of the $k$ least worst leaves below that parent, since the mixed strategy chooses uniformly among them. This ignores that leaves aren't independent, as they may share actions. This reduces a plan involving many contingent future actions to comparisons among the actions available now.
 
 Internalizing the expectations about a node's children into the node gives the node its own piecewise linear curve. Solving it for the time at which the next child is expected to have positive utility determines when to take that branch, unless new information invalidates the decision in the meantime.
 
-This makes a simple greedy loop sufficient. From the current state, the wallet finds the next action, i.e. the child of the root, that will become attractive soonest, waits for it to do so, and takes it. It then prunes that action's siblings, committing to the sub-tree below it. There can be multiple paths to the same outcome, for example through repeated actions or states that converge, so an implementation may share sub-trees and represent the tree as a DAG.
+This makes a simple greedy loop sufficient. From the current state, the wallet finds the next action, i.e. the child of the root, that will become attractive soonest, waits for it to do so, and takes it. It then prunes that action's siblings, committing to the sub-tree below it. This is part of why the cost of a pure strategy is a transparent sum of piecewise linear terms: crossing times can be solved for, and the brackets derived efficiently at predicted future times. Since the predicted times are themselves uncertain, the cost brackets can also be augmented with time brackets, i.e. bounds on those predicted times. There can be multiple paths to the same outcome, for example through repeated actions or states that converge, so an implementation may share sub-trees and represent the tree as a DAG.
 
 ## Coin selection with objective costs
 
