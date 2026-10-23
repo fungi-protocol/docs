@@ -45,6 +45,12 @@ The primary purpose of this protocol is to construct an [imputation](https://en.
 
 ### Hedonic games and games with transferable utility
 
+Coalition formation games, in game theory, typically refer to the cooperative game theory setting, where agreements are binding and can be enforced by some kind of mechanism. While Bitcoin can provide such a construct, analogously to the function of the court system, the current consensus rules require some kind of contract to be anchored in a confirmed transaction, i.e. binding agreements require creating new transactions and waiting for them to confirm.[^coinswap] In order to build transactions without having already built transactions, we must therefore assume the non-cooperative setting. Coalition formation in the non-cooperative setting can only rely on incentives.
+
+When preferences over the coalition structure are in play (the cost function), in so-called hedonic games, it is often very hard (also in an algorithmic sense) to find stable coalition structures, as the preferences of the participants may conflict. In their most general form, such game descriptions are enormous as the preferences are defined over a large combinatorial object. Even when many assumptions are made, like constraining the kinds of preferences the participants may have, it is still generally hard to find stable equilibria.[^hedonic] Complicating matters further, sharing the preferences would itself be a privacy leak, so we would prefer to limit that as much as possible, and certainly we cannot assume a mechanism that optimizes outcomes by just being able to read these preferences.
+
+Fortunately, some of these difficulties of hedonic games can be bypassed with the introduction of a transferable utility, and assigning the coalition itself a payoff, which can be redistributed. In our use case this payoff originates from any blockspace savings from net settlement, and the privacy benefits from collaboration. This surplus is not observable, it is the sum of subjective payoffs depending on individual participants' preferences (which in turn depend on their circumstances, privacy threat model, etc). While this does not guarantee stability, if a stable coalition structure exists, a transferable utility can make the process of finding one much easier by iterated bilateral negotiation. However much these benefits are worth to participants, if this surplus exists, then it can be voluntarily redistributed as sats among the participants (i.e. via a fee mechanism) aligning incentives for collaborative transaction construction, so that all coalition members stand to gain from participating.
+
 Coalition formation games output a partition over $N$ peers. Finding stable equilibria in such games is generally difficult. Depending on the structures in the preferences of the peers, many special cases described in the hedonic games literature are still hard. In the byzantine setting appropriate for Bitcoin protocols, no such structure can be assumed, which makes finding stable partitions intractable.
 
 Since the participants in the protocol unilaterally control independent UTXOs during the execution of this protocol, we're constrained to the non-cooperative setting, where agreements are non-binding and can't be enforced. Additionally, for privacy, the cost functions should remain hidden so that no mechanism can access the peers' preferences and globally optimize. Note that due to the nature of revealed preferences, the cost function can't be fully hidden.
@@ -89,37 +95,11 @@ All peers can then proceed to transaction construction, where each party is enti
 
 ### Setup: BIP 322 gossip, online key enrollment
 
-Every spendable coin could potentially be spent in a multiparty transaction (although not all coins can be co-spent). To facilitate this, we require a gossip mechanism for BIP-322 ownership proofs, with a replacement and expiration mechanism for flood protection, committing to a public key referred to as the *online key* for the coin.
-
-The purpose of this online key is to authenticate the owner of the UTXO without requiring them to access the spending keys for communication. Anonymous authentication requires the use of ring signatures (and are therefore less likely to be supported by a HWW than BIP-322 proofs), and also simplify the mapping to just a single public key per UTXO, regardless of the complexity the `scriptPubKey` might have (complex multisig or ambiguity from multiple spend paths).
-
-Ownership proofs are also used to estimate input weights. For P2TR outputs, this indicates the spend path intended to be used in any collaborative transactions. Note, however, that this isn't enforceable.
-
-Each proof's endorsement of the online key has a validity interval specified in terms of Bitcoin block height or MTU (valid-after and valid-until). When multiple proofs by the same UTXO are nominally in effect, the one with the latest expiry time takes precedence. Ownership proofs commit to a block hash whose height or MTU is within some set interval of the valid-after field.
-
-#### Flood protection
-
-Online keys may need to be rotated. A rate limiting mechanism is needed for ownership proofs, and more generally for other protocol messages.
-
-Ownership proofs are tied to UTXOs that provides some degree of Sybil protection, since creating UTXOs incurs a cost. However, this is insufficient for flood protection, since there is no restriction on how many ownership proofs can be created.
-
-Note that Sybil resistance for flood protection is a separate concern from Sybil resistance in the context of CoinJoin $n-1$ deanonymization attacks on CoinJoins. The latter is assumed to be encoded of the cost function, and therefore out of scope for this protocol.
-
-To be accepted (and propagated through gossip) by a peer, any newly made proof associated with a coin must have a hash value (e.g. wtxid of the BIP 322 `to_sign` virtual transaction) numerically smaller than all the other proofs already associated with that output which are known to the peer.
-
-Because ownership proofs may be valid at disjoint time intervals, a peer should store up to $k$ proofs (in total, not per validity time interval) in its gossip set for each candidate UTXO, so long as the hashes of *all* of these are numerically smaller than $c_1 + 2^{(c_2 d k)}$, where $d$ is the total duration of all proofs, and $c_i$ are dynamically set policy values (similar to `minrelayfee`, based on local resource limits).
-
-#### Precedence ordering
-
-In addition to rudimentary flood protection for the ownership proof gossip, this defines a clear precedence order. This is so that with respect to a specific block tip, even without global consensus on the set of all ownership proofs, it's possible to efficiently arrive at the unambiguous mapping from a particular set of UTXOs to the same set of online keys by sharing with peers any relevant proofs they might be missing.
-
-If the online keys are generated by hash chain (similar to LN revocation keys), revealing the key can revoke a previous ownership proof, forcing a linear sequence of key updates, and providing a mechanism for efficient revocation. However, it's unclear at the time of writing whether revocation is required at all, and the proof of work approach to flood protection seems sufficient.
-
-Similarly, rate limiting could be done by restricting the rate of broadcast on the basis of the committed block hash, but on its own, this wouldn't establish a precedence order, and in the absence of consensus on the set of ownership proofs, it may result in ambiguities about which online key to use.
+🤖 Ownership proofs and online keys are specified under [peer to world broadcast](channels.md), together with the gossip, flood protection and precedence ordering rules for them and for listen advertisements.
 
 ### Negotiation: Listen advertisements and/or gossip of partially accepted proposals
 
-Short-lived listen advertisements may be signed by "makers" using their online keys to indicate that the owner of a UTXO is soliciting proposals pertaining to its spending over the named communication channel. Peers should only gossip listen advertisements for currently active or soon-to-be-active online keys. The hash of the signature is used as a flood protection mechanism, similar to ownership proofs.
+Short-lived listen advertisements may be signed by "makers" using their online keys to indicate that the owner of a UTXO is soliciting proposals pertaining to its spending over the named communication channel.
 
 "Takers" evaluate listening coins and can construct proposals (defined in the next section) over the specified communication channels.
 
@@ -147,7 +127,7 @@ Fully accepted proposals can then be broadcast for aggregation. A fully accepted
 
 Individual proposals commit to a specific set of BIP 322 ownership proofs so that the signatures on them are verifiable. Proposals that refer to expired ownership proofs are still considered valid, and more generally, proposals that commit to different ownership proofs are potentially valid as long there is a non-expired ownership proof associated with the UTXO, which is also used for input weight estimations. See the coalition formation proposal section below for details.
 
-Co-spend proposals aren't updatable or revocable once fully accepted, but they do have an expiry (specified in block height, MTU, or UTC time). More than one signature on the same proposal should be considered a flooding attack by all participants, and honest parties should only sign (MuSig2) a proposal once. Again, see below for discussion of flood protection with respect to partially accepted proposals.
+Co-spend proposals aren't updatable or revocable once fully accepted, but they do have an expiry (specified in block height, MTP, or UTC time). More than one signature on the same proposal should be considered a flooding attack by all participants, and honest parties should only sign (MuSig2) a proposal once. Again, see below for discussion of flood protection with respect to partially accepted proposals.
 
 However, co-spend proposals are able to explicitly include conflict hints for other proposals, indicating that (at least) the proposer of the conflicting proposal wouldn't accept a coalition formation proposal that depends on the excluded proposals.
 
@@ -181,11 +161,11 @@ A coalition formation proposal also specifies a concrete transaction constructio
 
 Once a coalition formation proposal is fully accepted, a coalition has been formed, complete with a payoff imputation. The online keys are then used to initiate a consensus protocol to construct the full transaction.
 
-Since the coalition formation proposal addresses every UTXO, its ownership proof set commitment is authoritative. This determines the canonical online key set for the coalition, allowing a consensus protocol to be initialized. The aggregator should use precedence ordering for symmetry breaking to minimize additional gossip and improve the chances of the coalition formation proposal being unanimously accepted, but there's no consensus state for this data at the time the coalition formation proposal is being authored. The purpose of coalition formation proposals is to bootstrap both the consensus protocol and incentive compatibility to make use of it.
+Since the coalition formation proposal addresses every UTXO, its ownership proof set commitment is authoritative. This determines the canonical online key set for the coalition, allowing a consensus protocol to be initialized. The aggregator should use [precedence ordering](channels.md) for symmetry breaking to minimize additional gossip and improve the chances of the coalition formation proposal being unanimously accepted, but there's no consensus state for this data at the time the coalition formation proposal is being authored. The purpose of coalition formation proposals is to bootstrap both the consensus protocol and incentive compatibility to make use of it.
 
 #### Coalition formation proposal structure
 
-The surplus of all included co-spend proposals is added to the coalition formation proposal's adjustment vector, which covers all UTXOs. The coalition formation proposal's surplus must be positive and needs to cover the shared transaction fields at the set feerate, but otherwise, the aggregated surplus is at the discretion of the aggregator; it may be claimed as a coordination fee, redistributed among all parties arbitrarily, or included in the mining fees.
+🤖 The surplus of all included co-spend proposals belongs to the coalition. The aggregator proposes adjustments for each UTXO and an amount to allocate to mining fees. Some or all of the surplus may be allocated to mining fees, which must cover the shared transaction fields at the agreed feerate. These allocations take effect only if the coalition formation proposal is unanimously accepted.
 
 The logical conjunction of co-spend proposals implies the union of their adjusted UTXOs and the intersection of their conditions is in effect. The per-UTXO adjustments are collected for each outpoint. The total adjustment for each UTXO may not overflow its effective value, based on the range proof widths.
 
@@ -213,23 +193,7 @@ The following are sets under intersection:
 
 ### Flood protection for partially accepted proposals
 
-Partially accepted proposals can be communicated directly only between involved peers or gossipped to third parties. Gossip of partial proposals enables a single proposer to make many nuisance offers involving different sets of keys. Normally linkable ring signatures will protect their identity, which means that other nodes can only use a statistical approach to detect the culprit and may mistakenly penalize the UTXOs the attacker names, without their owners contributing to this flooding attack. "Normally" means the key image generator point is just be a hash to curve of the proposal data itself, allowing a practically unlimited number of ring signatures per UTXO (exponential in the size of the candidate UTXO set).
-
-To limit this behavior, the linkable ring signature key image base point can be time dependent (e.g. making use of a sufficiently buried block's hash as a randomness beacon) and include a truncated hash of the proposal when choosing the generator (by hashing to the curve). Truncating to 10 bits, for example, would allow up to 1,024 unrelated proposals to be accepted or made by a single UTXO equivocation per timestep, allowing flooding to be prevented. Note, however, that honest users may be restricted from accepting some honest proposals due to the birthday bound, but honest proposers with knowledge of other proposals can grind the proposal data to avoid collisions, and we of course assume attackers can do this without restriction).
-
-Additionally, it's possible to make use of a verifiable encryption scheme for the openings of the commitments, allowing verification of the proposal during gossip, but this doesn't prevent the broadcast of nuisance proposals that wouldn't be accepted despite being formally valid.
-
-In contrast, in a semi-honest setting, and if acceptors don't mind revealing whether they accept to the proposer, the linkable ring signatures can be shortcut entirely and MuSig2 negotiated directly, with the proposer as the coordinator between all named parties. MuSig2 signing should still be initiated concurrently, even when linkable ring signatures are used to minimize the number of round trips.
-
-### PayJoin-like payments in multiparty transactions
-
-Payments requests or intents may be encoded in the co-spend proposals using the value adjustment mechanism. Even if fully accepted, such proposals are merely signalling the intention to pay, because finality is contingent on successful collaborative transaction construction.
-
-The sender and receiver must arrange for proposals to transfer the payment amount. This can be achieved by the receiver extending the sender's proposal with additional UTXOs (potentially of unrelated parties, although at least one UTXO should be the receiver's in order to claim the adjustment, and multiple proposals may be required to represent the full payment amount due to the range proof width restriction). The sender and receiver must collaborate to produce a balance proof, as only one or the other knows the openings of some of the homomorphic value adjustments.
-
-With this approach, fallback transactions as in BIPs 79-7 are no longer as prudent, since the receiver's UTXOs are much more difficult to probe. Neither sender nor receiver needs to disclose any UTXOs to each other; only the payment amount is fully known to both.
-
-Although out of scope for this document, peers also negotiate the payment details out of band and arrange for valid registration of the receiver outputs during transaction construction. In this setting, the receiver doesn't need to contribute a UTXO at all and may still get privacy from the sender, since their output(s) may be ambiguous, and there are no limitations arising from the use of width limited range proofs.
+🤖 Gossip of partially accepted proposals, and its flood protection, is specified under [peer to world broadcast](channels.md).
 
 ### Post quantum security and privacy
 
@@ -243,10 +207,10 @@ Finally, PQ privacy must of course also assume that metadata privacy at the tran
 
 ### Transaction construction protocol
 
-A transaction construction protocol can provide liveness, although in this setting, relying on KVACs would require one of the peers to serve as the coordinator, and it would be trusted. With modification, this coordinator could prove all transcript messages it accepted are valid, but may still arbitrarily censor certain operations, causing a UTXO to be unfairly blamed for failing to sign.
+🤖 The accepted coalition formation proposal specifies the initial inputs, their online keys, the negotiated adjustments and the parameters for [transaction construction](transaction-construction.md). It is the genesis of the construction instance. The initial state can be proven valid with respect to each UTXO's adjustment sum commitments, which enforces that the agreed imputation is in effect. When construction stalls, the [recovery track](recovery-track.md) turns the stall into a new coalition formation proposal among the responsive subset.
 
-Technically the coalition formation proposal can implement a coordination fee mechanism — for example, by making all adjustments slightly negative, apart from that of the coordinator (which may or may not be the aggregator). This provides the coordinator with an incentive to coordinate honestly on average. Unfortunately, this does little for any targeted censorship risk, so long as the payoff from censorship (of e.g. a specific TxOut) dominates over the expected loss of revenue from sabotaging a single attempt at transaction construction. It's likely that the majority of the revenue is still recoverable in a subsequent blame round, as the other participants have no indication that censorship has occurred.
+🤖 Any participant can act as an aggregator. Assembling a proposal gives that participant no additional privileges during transaction construction.
 
-For a more robust mechanism, coalition formation outputs a set of online keys for a coalition, and among other things, these are intended to be used to implement byzantine fault tolerant state machine replication for transaction construction. The initial state, based on the coalition formation proposal, can be proven valid with respect to each UTXO's adjustment sum commitments, which enforces that the agreed to imputation is in effect.
+[^coinswap]: For example [CoinSwap](https://openswap.live/) is such a protocol which relies on atomic swap contracts, designed with privacy in mind.
 
-The state machine collects inputs and outputs of a transaction (or tree of transactions a la CoinJoinXT). Since state messages are self authenticating, authenticating using zero knowledge proofs (anonymous credentials or ring signatures), they can be posted anonymously, much like in a permissioned blockchain, where all peers act as validators.
+[^hedonic]: D. Peters and E. Elkind, [*Simple Causes of Complexity in Hedonic Games*](https://arxiv.org/abs/1507.03474) (2015). Shows how modest expressiveness in preferences can make deciding the existence of stable outcomes computationally hard.
