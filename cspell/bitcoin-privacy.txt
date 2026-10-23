@@ -54,3 +54,5 @@ taptree
 unlinkability
 UTXO
 xpub
+vbyte
+vbytes
