@@ -7,11 +7,13 @@ stale_after: 2026-11-06T00:00:00Z
 
 # 🤖 Mixed strategy
 
-This chapter recommends how to compose a mixed strategy out of the cost of pure strategies, as set out in the [Optimization framework](optimization_framework.md) chapter, using the concrete monotone terms of the evaluation in the *Concrete cost function* chapter.
+This chapter recommends how to compose a mixed strategy out of the cost of pure strategies, as set out in the [Optimization framework](optimization_framework.md) chapter, using the concrete monotone terms of the evaluation in the [Privacy liability terms](cost_function_concrete.md) chapter.
 
 ## Randomization
 
-The wallet doesn't simply follow the best pure strategy. If it did, an adversary able to predict the wallet's state could also predict its choices. Instead it plays a *mixed strategy*: it chooses uniformly at random among the $k$ best pure strategies that are sufficiently dissimilar, where $k$ is a parameter. This adds noise to the wallet's revealed preferences. The decision tree models the pure strategies explicitly, and the wallet randomizes over them. How to measure dissimilarity is still open. An alternative is to sample non-uniformly from a larger set, with lower probability for similar choices.
+An adversary that knows the wallet's state and pure strategy can predict its next action. A mixed strategy randomizes over pure strategies, but its effect depends on how the observable outcomes differ.
+
+Uniform selection among $k$ distinct leaves has $\log_2(k)$ bits of entropy over leaf identity. However, similarities between their outcomes can reduce the uncertainty over the distinctions relevant to an adversary. Sampling should give less weight to similar alternatives so that the resulting distribution is approximately uniform over materially different choices. How to measure similarity and construct this sampling distribution remains open.
 
 ## Time dependence
 
