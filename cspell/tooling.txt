@@ -5,6 +5,8 @@ devshell
 DNSSEC
 dontInstall
 dylanowen
+fileset
+foldl
 fontconfig
 Graphviz
 KaTeX
@@ -14,8 +16,11 @@ mmdc
 NixOS
 nixpkgs
 pkgs
+prerender
+prerendered
 pytest
 PyYAML
 stdenv
+svgs
 toplevel
 unfetched

@@ -1,26 +1,46 @@
 { ... }:
 {
   perSystem =
-    { pkgs, mmdc, ... }:
+    {
+      pkgs,
+      lib,
+      fontconfig,
+      mermaidSvgs,
+      ...
+    }:
     let
+      # Only what the book is built from, so that changes to the nix files,
+      # the tests or the spelling dictionaries do not rebuild it.
+      src = lib.fileset.toSource {
+        root = ../.;
+        fileset = lib.fileset.unions [
+          ../README.md
+          ../book.toml
+          ../docs
+          ../theme
+          (lib.fileset.fileFilter (f: f.hasExt "py" && !lib.hasPrefix "test_" f.name) ../contrib)
+        ];
+      };
+
       site = pkgs.stdenvNoCC.mkDerivation {
         name = "fungi-docs";
-        src = ../.;
+        inherit src;
 
-        nativeBuildInputs = [ mmdc ] ++ (with pkgs; [
+        nativeBuildInputs = with pkgs; [
           mdbook
           mdbook-graphviz
           mdbook-katex
           graphviz
           (python3.withPackages (ps: [ ps.pyyaml ]))
-        ]);
+        ];
+
+        MERMAID_SVG_DIR = mermaidSvgs (
+          [ ../README.md ]
+          ++ lib.filter (f: lib.hasSuffix ".md" (toString f)) (lib.filesystem.listFilesRecursive ../docs)
+        );
 
         buildPhase = ''
-          # mmdc writes a chromium profile under $HOME.
-          export HOME=$(mktemp -d)
-          # mermaid measures text with getBBox and rejects a zero-sized box, so
-          # the build sandbox has to carry a font of its own.
-          export FONTCONFIG_FILE=${pkgs.makeFontsConf { fontDirectories = [ pkgs.dejavu_fonts ]; }}
+          export FONTCONFIG_FILE=${fontconfig}
           python3 contrib/book.py .
           mdbook build -d $out
         '';
