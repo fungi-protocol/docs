@@ -5,100 +5,59 @@ status: draft
 stale_after: 2026-11-06T00:00:00Z
 ---
 
-# Privacy liability terms
+# 🤖 Privacy liability terms
 
-🤖 The concrete terms of the [cost function](optimization_framework.md). Each term is specified in its own chapter. This one summarizes them.
+Privacy liabilities represent subjective losses of utility associated with outcomes that do not meet the user's privacy objectives. Each term evaluates a specified measure or proxy; evidence that the defined problem has been removed discharges the corresponding liability. The cost function combines these liabilities with objective costs and the utility of completing payments to guide the wallet's automated decisions.
 
-## Terms
+The liabilities collectively reduce a new privacy-problematic coin's subjective value by the budget fraction of its nominal value. The [Optimization framework](optimization_framework.md#global-privacy-budget) explains this valuation, and [Cost function structure](cost_function_structure.md#linear-combination) defines the accounting. The measures and their thresholds express objectives chosen for the user's threat model. Meeting them does not establish that the resulting outcome satisfies that threat model in every respect. This chapter describes the purpose and interactions of the terms; their definitions and justifications appear in the linked chapters.
 
-🤖 Objective costs, such as fees and blockspace, are concrete. The terms below are privacy liabilities and preferences.
+## Randomized selection
 
-### 🤖 Randomization {#randomization}
+An adversary who controls many of the coins a user co-spends with learns the user's coins by elimination. Randomizing which coins are co-spent makes that costly.
 
-Two weak preferences, defined only on outpoints. $t$ is a block hash, used as a public randomness beacon, and $x_i = H(t, i)$ for each input outpoint $i$. Each preference is worth less than 1 sat, so it only breaks ties.
+- **Per input and pairwise preferences.** They randomize which coins are co-spent, with block hashes as a public randomness beacon. They only break ties, so they don't compete with the other terms.
+- **Cardinality.** Everyone uses the same randomness, so the bias it leaves in a transaction's inputs can be observed afterwards, and bounds the size of the order book the inputs were selected from.
 
-- **Individual:** $x_i$, preferring "lucky" hashes. This is a total order on coins.
-- **Pairwise:** $x_i \oplus x_j$, preferring pairs with a small XOR metric.
+Randomization also promotes a robustly connected transaction graph, which the [counterfactual paths](cost_function_counterfactual_paths.md) term measures. See the [Randomized selection](cost_function_randomized_selection.md) chapter for the terms, and the [Order book size estimation](sybil_resistance_index.md) chapter for the lower bound on the number of candidates.
 
-Both are summed over the transaction's inputs, through a monotone scaling function. They bias co-spending through market choices. See the [Randomized selection and Sybil resistance](cost_function_randomized_selection.md) chapter.
+## 🤖 Sybil resistance
 
-### 🤖 Sybil resistance {#sybil-resistance}
+The Sybil resistance term evaluates the cost of an adversary supplying the coins in a coin's history and the candidates from which they were selected. Observed resource requirements and estimates derived from selection bias are assessed against the user's threat model. The liability is zero when the attack cost is judged prohibitive under that model; otherwise, it represents a subjective loss scaled by the user's privacy budget. See the [Sybil resistance](cost_function_sybil_resistance.md) chapter.
 
-The provenance term estimates the size of the order book at the time of a coin's funding transaction, from that transaction's input set. So it can be seen as a multiplier for the liquidity (coindays) and the transaction cost (fees) of the observed transaction. A discount rate reduces them to one cost. It can be repeated for ancestors, subject to data availability and computational limits.
+## Subset sum ambiguity
 
-That's why it's conservative: the cost to the adversary can be reported as a minimum cost and a predicted maximum. The estimate can also be used for degree sequence estimation in the Karrer–Newman model of the [Max flow based counterfactual path estimation](cost_function_counterfactual_paths.md) chapter.
+Amounts are the most direct way to link a transaction's inputs to its outputs, and the inputs to each other. This term measures how well the other users' coins explain the user's amounts.
 
-The Sybil resistance index $L$ is a lower bound on the number $N$ of candidates, computed from joint sums of spans:
+- The more combinations of the user's outputs the subset sums of the other users' inputs cover, the more readings of the transaction remain, and the lower the liability.
+- It measures the same for the user's own inputs.
+- Once the transaction has been fully built, both are also checked against the subset sums of the other users' outputs.
 
-1. Sort the input hashes $x_i$ on a circle of $2^{64}$ points.
-2. $T_{m,r}$ is the smallest total width of $r$ spans with disjoint interiors, each from a hash to its $m$-th successor, plus one grid unit per span. Let $\tau_{m,r} = T_{m,r} / 2^{64}$.
-3. For a hypothetical pool of $M$ candidates:
-   $$
-   q_{m,r}(M) = \min\left(1, \frac{M^{r(m+1)} \, \tau_{m,r}^{rm}}{r! \, (rm)!}\right)
-   $$
-4. The score is:
-   $$
-   S(M) = \sum_{m,r} \frac{q_{m,r}(M)^{-1/2} - 1}{m(m+1)r(r+1)}
-   $$
-5. $L$ is the smallest $M$, at least the number of inputs, with $S(M) \lt 1/\delta$.
+See the [Subset sum ambiguity](cost_function_subset_sum_ambiguity.md) chapter. The [Subset sum density](subset_sum_density.md) chapter covers the density it relies on, and how co-spend proposals and the aggregator raise it.
 
-Someone examining the transaction doesn't know $t$. So they take the largest $L$ over the $W$ candidate block hashes, each at $\delta / W$.
+## Counterfactual paths
 
-Joint sums are used because the estimate:
+[Intersection attacks](collaborative_txn_privacy.md) compare the histories of coins across transactions, and what those histories have in common reveals the link. This term counts the disjoint routes a coin's amount could have taken from its origins.
 
-- **is symmetric:** rotating or reflecting the hashes doesn't change $L$;
-- **uses all input values:** every input's hash enters through the spans;
-- **can be bounded computationally:** caps on $m$ and $r$ keep the guarantees, and sums of single gaps screen each block hash;
-- **is simple to understand how it's monotone:** adding an input splits a gap, so the sums only shrink and $L$ only grows;
-- **has a controllable error:** $P(L \gt N) \le \delta$ for every selection strategy.
+- Its main use is a label for each of the wallet's own coins, indicating how closely it meets the objective for counterfactual routes.
+- The consolidation penalty uses these labels, together with subset-sum density, to evaluate spending coins together.
 
-See the [Randomized selection and Sybil resistance](cost_function_randomized_selection.md) chapter for the terms, and the [Sybil resistance index](sybil_resistance_index.md) chapter for the proofs and measurements.
+See the [Counterfactual paths](cost_function_counterfactual_paths.md) chapter.
 
-### 🤖 Subset sum ambiguity {#subset-sum-ambiguity}
+## Consolidation
 
-A liability $0 \le \ell(o) \le 1$ for each output $o$ of a proposed decomposition.
+The consolidation penalty accounts for the additional exposure to intersection attacks introduced by spending multiple wallet-owned inputs together. Its liability is deliberately unbounded: consolidation may leave the wallet worse off than its baseline, and the corresponding subjective loss may exceed the remaining privacy budget. An automated action is taken only when the cost-function evaluation predicts an improvement. Fees, batching, and reduced fragmentation may make more aggressive consolidation attractive in the best case, while the available evidence must support the decision.
 
-- It scores how well subset sums of the other users' inputs' effective values cover the complete sumset of the decomposition from above, within a slop $\varepsilon$.
-- The denser these subset sums, the more explanations, and the lower $\ell(o)$.
-- Counting stops once there are enough explanations, and $\ell(o)$ only falls as inputs and outputs are learned.
+The penalty is attenuated jointly by subset-sum density and counterfactual routes, with the contribution of each depending on the other. Dense subset sums alone are insufficient, because comparing the ancestry of pairs of inputs narrows down an intersection efficiently. The route analysis considers each input against the combined set of coins through which the inputs' funds first entered the wallet. These pairwise flow measurements would contribute to a graded measure of absorption, whose aggregation and use in the liability remain to be specified. The consolidation chapter defines these quantities and their thresholds. The same penalty contributes to the evaluation of a wallet state by considering a hypothetical transaction spending all of its coins together, so that the wallet can arrange its state to minimize privacy damage if an emergency requires the user to spend those funds at short notice.
 
-See the [Own inputs or outputs subset sum ambiguity](cost_function_subset_sum_ambiguity.md) chapter, and the [Others' inputs subset sum density](subset_sum_density.md) chapter for how density is estimated and optimized.
+See the [Consolidation penalty](cost_function_consolidation.md) chapter.
 
-### 🤖 Max flow based counterfactual path estimation {#max-flow-based-counterfactual-path-estimation}
+## Siblings
 
-Disjoint flows: the number of counterfactual routes $\lfloor F / d \rfloor$ from a source coin to a set of sink coins.
-
-- $F$ is a max flow over the transaction graph, with every edge capped at the amount $d$.
-- Each own coin gets a label $0 \le \iota(c) \le 1$ from the routes from its own origins. At $\iota(c) = 1$ it's impervious to intersection attacks.
-- For coins spent together, the routes matrix, with the routes from each origin to each input, shows what an intersection can reveal.
-
-See the [Max flow based counterfactual path estimation](cost_function_counterfactual_paths.md) chapter.
-
-### Consolidation
-
-🤖 Spending own coins together links them, and loss from intersection attacks compounds with each one.
-
-- 🤖 $\ell_c = (b^{\nu_0} - 1) \cdot (1 - p q)$, where $\nu_0$ is the number of inputs less one, and:
-  - $q = 1 - \nu / \nu_0$ measures the routes, where $\nu$ sums $1 - \iota$ over the inputs, less the largest one;
-  - $p$ measures the density of their subset sums.
-- Normally the penalty can be larger than the budget, to avoid actions vulnerable to intersection attacks.
-- 🤖 Routes and density each relieve it only in proportion to the other.
-- With subset sums dense enough that the inputs can't easily be clustered, and with counterfactual routes, consolidation is tolerated freely.
-- 🤖 $\ell_c = 0$ once the density reaches its threshold and every input but one is impervious. Density alone isn't enough, because comparing the ancestor sets of pairs of inputs narrows down an intersection attack efficiently, even in a large transaction.
-- So the cost function compels a strategy. First CoinJoin with low fan-in while the subset sums on the inputs are dense. Once the counterfactual routes are built and the funds are well absorbed into the CoinJoin graph, consolidate their descendants, subject to the counterfactual superconcentrator condition: $K$ routes over the other users' edges only, from the earliest ancestor coins to the inputs under consideration.
-
-🤖 See the [Consolidation penalty](cost_function_consolidation.md) chapter.
-
-### 🤖 Sibling avoidance {#sibling-avoidance}
-
-Spending outputs of the same transaction together is penalized heavily.
-
-- $\ell_s = \sigma \sum_T \max(0, j_T - 1)$, where $j_T$ is the number of inputs created by transaction $T$, and $\sigma$ is large.
-- Neither $\iota$ nor density reduces it.
+Spending outputs of the same transaction together is wasteful, and a strong sign of common ownership. Amounts can explain the values, but not two users spending outputs of one transaction together, so neither subset sums nor counterfactual routes relieve it. It's penalized heavily.
 
 See the [Sibling output penalty](cost_function_siblings.md) chapter.
 
-### 🤖 UTXO pool diversity {#utxo-pool-diversity}
+## UTXO pool diversity
 
 A wallet also values the diversity of its own UTXO pool:
 
@@ -108,14 +67,10 @@ A wallet also values the diversity of its own UTXO pool:
 
 How to represent this mathematically is an open question.
 
-### 🤖 Other ad hoc terms {#other-ad-hoc-terms}
+## Other ad hoc terms
 
 Other ad hoc terms, such as fingerprint avoidance, are yet to be specified.
 
-### 🤖 In the decision tree {#in-the-decision-tree}
+## In the decision tree
 
-- **Subset sum ambiguity** can only fall as other users' inputs and outputs are learned. This gives the best and worst cases in [step 6 of *Bottom-up construction*](bottom_up_construction.md#6-bracket-and-back-up-values).
-- **Labels** $\iota$, and the routes matrix entries for confirmed inputs, are fixed once a coin confirms, so they're cached per coin. Nothing other users add changes them.
-- **Siblings and consolidation** are fixed when the inputs are chosen, except that $\ell_c$ can only fall as density rises.
-- **Best cases** of the privacy liabilities are 0, used for pruning.
-- **Randomization** changes during coalition formation, as candidates appear. The provenance term is fixed once a coin's funding transaction confirms. Both are events that trigger [re-evaluation](tactics.md#re-evaluation).
+Each liability either only falls as other users' coins are learned, or is fixed once the inputs are chosen or a coin confirms. That's what lets [bottom-up construction](bottom_up_construction.md#6-bracket-and-back-up-values) bracket every leaf between a best case and a worst case, cache what's fixed per coin, and [re-evaluate](tactics.md#re-evaluation) only when something changes. Once the transaction is fully constructed, the same cost function evaluates the complete state and determines the liabilities and privacy-budget accounting. Each term's chapter says how it behaves in the decision tree.
