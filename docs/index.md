@@ -29,7 +29,7 @@ okf_version: "0.2"
     * [🤖 Sybil resistance index](sybil_resistance_index.md) - A conservative lower bound on the number of candidate coins a transaction's inputs were selected from, and how to find the block hash they were selected with.
     * [🤖 Others' inputs subset sum density](subset_sum_density.md) - Outline of subset sum density, how it's estimated, and how co-spend proposals and the aggregator optimize it.
     * [🤖 Own inputs or outputs subset sum ambiguity](cost_function_subset_sum_ambiguity.md) - Outline of a concrete cost function term for the subset sum ambiguity of output values.
-    * [🤖 Max flow based counterfactual path estimation](cost_function_counterfactual_paths.md) - Outline of a cost function term that estimates disjoint counterfactual paths with one max flow, and labels coins impervious to intersections.
+    * [🤖 Counterfactual paths](cost_function_counterfactual_paths.md) - Outline of how to count disjoint counterfactual paths with one max flow, and how to estimate the count.
     * [🤖 Consolidation penalty](cost_function_consolidation.md) - Outline of a concrete cost function term penalizing consolidation unless the subset sums are very dense and the coins are impervious to intersections.
     * [🤖 Sibling output penalty](cost_function_siblings.md) - Outline of a concrete cost function term penalizing spending sibling outputs together.
 * [Tactics](tactics.md) - Generating the decision tree bottom up, with coin selection and change decomposition, and when to re-evaluate it.
