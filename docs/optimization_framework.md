@@ -52,7 +52,7 @@ Actions include announcements and negotiation, not just the steps of transaction
 - accepting a co-spend proposal, or a coalition formation proposal
 - adding auxiliary inputs and outputs to a committed transaction, and signing it
 
-How the tree is built is part of the strategy, and is described in the *Tactics* chapter.
+How the tree is built is part of the strategy, and is described in the [Tactics](tactics.md) chapter.
 
 How the wallet chooses among the pure strategies in the tree, and when it acts, is described in the [Mixed strategy](mixed_strategy.md) chapter.
 
@@ -80,7 +80,7 @@ Unfortunately, enumerating every contingency like this, even if the depth is res
 
 ### 🤖 Bracketed evaluation under incomplete information {#bracketed-evaluation-under-incomplete-information}
 
-Since the information available about a state may be incomplete, a state's evaluation is a bracket between a best case and a worst case, described in the [Cost function structure](cost_function_structure.md#bracketing) chapter.
+During decision-making, states are evaluated with incomplete information, as a bracket between a best case and a worst case, described in the [Cost function structure](cost_function_structure.md#bracketing) chapter. An automated action is taken only when the cost-function evaluation predicts an improvement, accounting for the wallet's subjective balance, objective costs and the utility of completing payments. As information about other users' coins becomes available, the lower bound can improve. Once the transaction is fully constructed, the same cost function evaluates the complete state, including the other users' output values. The completed evaluation determines the liabilities and the accounting for privacy-budget expenditure.
 
 ### Future cost of spending (Bitcoin Core's waste metric)
 
@@ -174,13 +174,13 @@ As described in abstract terms above, a per intent deadline or confirmation targ
 
 The privacy sensitivity of a transaction determines whether the preferred behavior is to execute a payment even if privacy is sacrificed as the deadline approaches, or whether it's better to miss the deadline or even forgo the transaction entirely if the payment cannot be made privately.
 
-🤖 This is determined by the shape of the intent's utility curve. If it plateaus or turns downwards, then a payment that cannot be made privately should not be made at all. If it keeps rising, then at some point the utility of making the payment dominates any privacy liabilities, which is how a hard deadline is modeled.
+🤖 This is determined by the shape of the intent's utility curve. If it plateaus or turns downwards before outweighing the privacy liabilities, the wallet may miss the deadline or forgo the payment. A curve that keeps rising can model a hard deadline by eventually outweighing those liabilities.
 
 ### 🤖 Global privacy budget {#global-privacy-budget}
 
 Finally, a global (i.e. per wallet, not per intent or transaction) budget is used to normalize all metrics so that the costs of actions with different privacy outcomes are directly comparable. The budget has two parts: the *budget rate* $p$, a percentage chosen by the user, and the *remaining budget* $B$, an amount in satoshis. Only funds received at external addresses add to the remaining budget, which grows by $p$ times their value, and privacy-motivated expenses are deducted from it.
 
-This global budget limits overall spending for the purposes of privacy. The budget rate implies a lower bound for the expected harm from privacy leaks, since in setting it the user is indicating that the privacy improvements the wallet can provide are worth at least that much to them. This accounts for any downsides as well, such as the censorship risk or additional resources consumed.
+This global budget limits overall spending for the purposes of privacy. The user consents to the wallet's behavior for discharging privacy liabilities and is willing to spend up to this budget to obtain it. This implies that the expected subjective harm of leaving those liabilities undischarged is at least as great as the subjective cost of spending the budget, accounting for downsides such as censorship risk or additional resources consumed. Accordingly, all privacy liabilities collectively reduce a new privacy-problematic coin's subjective value by the budget fraction of its nominal value. Each term evaluates a defined problem; evidence that the problem has been removed discharges the corresponding liability to 0. These are subjective valuations under the specified criteria, rather than guarantees of privacy.
 
 🤖 How the budget turns privacy metrics into amounts in satoshis, so that all terms can be summed, is described in the [Cost function structure](cost_function_structure.md#linear-combination) chapter.
 

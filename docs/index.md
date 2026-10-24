@@ -10,7 +10,7 @@ okf_version: "0.2"
 * [Abstract transport interfaces](transport-interfaces.md) - Send, receive and bidirectional channels, the kinds of messaging the protocol needs, and broadcast built from peer to peer channels.
 * [🤖 Peer and broadcast channels](channels.md) - Broadcast to a group or to the world, built by gossip over peer to peer channels.
 * [Contacts and payment messaging](contacts.md) - What interactive payments need from peer to peer messaging between payer and payee.
-* [Market-based coalition formation](coalition_formation.md) - Under review in #18.
+* [Market-based coalition formation](coalition_formation.md) - Bilateral negotiation and aggregation of co-spend proposals into a unanimously accepted coalition formation proposal.
 * [Transaction construction](transaction-construction.md) - Content and state synchronization, the phases, the optimistic and recovery tracks, and what the validity proofs enforce.
   * [Block DAG](block-dag.md) - The validator blocks both tracks share, with their objects, nonce commitments and equivocation evidence, genesis, causal order and frontiers.
   * [🤖 Optimistic track: blocks and phase states](optimistic-track.md) - Unanimity and phase closure on the optimistic track, phase by phase.
@@ -21,11 +21,12 @@ okf_version: "0.2"
 
 # Privacy Optimization Strategy
 
-* [Optimization framework for Bitcoin wallets](optimization_framework.md) - Under review in #15.
+* [Optimization framework for Bitcoin wallets](optimization_framework.md) - Objective costs, privacy liabilities and payment utility as the basis for automated wallet decisions.
 * [🤖 Pure Strategy Evaluation](pure_strategy_evaluation.md) - How the cost of a pure strategy is evaluated: the structure of the cost function, and its privacy liability terms.
   * [🤖 Cost function structure](cost_function_structure.md) - The structure shared by the family of cost functions that evaluate pure strategies: time dependence, linear combination of terms and bracketing.
-  * [🤖 Privacy liability terms](cost_function_concrete.md) - What each privacy liability term of the cost function is for: the risk it prices, what it encourages, and how it relates to the others.
-    * [Randomized selection and Sybil resistance](cost_function_randomized_selection.md) - Selection preferences that randomize which coins are co-spent, a Sybil resistance index measuring their effect, and a provenance term valuing coins by it.
+  * [🤖 Privacy liability terms](cost_function_concrete.md) - The privacy objectives assessed by each liability term and how the terms interact.
+    * [Randomized selection](cost_function_randomized_selection.md) - Selection preferences that randomize which coins are co-spent, and a lower bound on the size of the order book they were selected from.
+    * [🤖 Sybil resistance](cost_function_sybil_resistance.md) - Observed resource requirements and sampled cost estimates assessed against the user's threat model.
     * [🤖 Sybil resistance index](sybil_resistance_index.md) - A conservative lower bound on the number of candidate coins a transaction's inputs were selected from, and how to find the block hash they were selected with.
     * [🤖 Others' inputs subset sum density](subset_sum_density.md) - Outline of subset sum density, how it's estimated, and how co-spend proposals and the aggregator optimize it.
     * [🤖 Own inputs or outputs subset sum ambiguity](cost_function_subset_sum_ambiguity.md) - Outline of a concrete cost function term for the subset sum ambiguity of output values.
@@ -39,4 +40,4 @@ okf_version: "0.2"
 # BIP Drafts
 
 * [PSBT Scrubber](bip-drafts/scrubber.md) - Which PSBT fields can be shared with trusted and untrusted parties such that privacy is preserved.
-* [Concurrent PSBT Construction](psbt-concurrent.md) - Under review in #16.
+* [Concurrent PSBT Construction](psbt-concurrent.md) - PSBT fields and rules for combining partial transactions and terminating concurrent construction.
