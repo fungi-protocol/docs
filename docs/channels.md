@@ -6,7 +6,7 @@ status: draft
 stale_after: 2027-04-15T00:00:00Z
 ---
 
-<!-- cspell:words blocklace RIBLT unlinkable -->
+<!-- cspell:words Alon Babai blocklace Itai Luby mixnet nostr Nym OHTTP pubsub PWA RIBLT unlinkable -->
 
 # 🤖 Peer and broadcast channels
 
@@ -77,9 +77,37 @@ The same building blocks may not suit both peer to world broadcast (coalition fo
 
 * **Hub and spoke.** Some peers are better connected, and many others connect to them.
 * **Clique.** Every peer is connected to every other peer, with no distinction between them. A transport that can send to any peer at any time, without a connection, behaves like this.
-* **Gossip.** In the random telephone model, any peer may be reachable, and each round a peer shares new information with one neighbor. In the local model, each peer is connected to only part of the network. Fungi mainly targets the local model, with a limited number of connections per peer.
+* **Gossip.** Two models apply, both described by Weaver (Unknown Participants, Changing Topologies, and Faulty Devices, PhD dissertation, Georgetown University, 2023, p. 69 and p. 155):
+  * In the **random phone call model**, also called the gossip model, each round a peer exchanges a bounded amount of information with one neighbor, picked at random. The graph is often assumed to be connected ([Karp et al. 2000](https://doi.org/10.1109/SFCS.2000.892324), [Boyd et al. 2006](https://doi.org/10.1109/TIT.2006.874516)).
+  * In the **LOCAL model**, each round a peer exchanges messages with all of its neighbors, and the topology has bounded degree ([Luby 1985](https://doi.org/10.1145/22145.22146), [Alon, Babai and Itai 1986](https://doi.org/10.1016/0196-6774%2886%2990019-2)).
 
-Connection based channels limit a peer to a more or less static local topology. A transport that can send a message to any peer at any time behaves more like a low capacity clique, or the random telephone model.
+  Fungi targets both models.
+
+Connection based channels limit a peer to a more or less static local topology, so a connection oriented transport scales well only in the LOCAL model. A transport that is connectionless end to end can send a message to any peer at any time. It matches the random phone call model, or a low capacity clique.
+
+## Candidate transports
+
+The specification relies only on the channel properties above. These candidate transports are not part of it. Gossip over any of them provides group and world broadcast. The table says what each provides directly.
+
+| Transport | Delivery | Broadcast domain | Sender anonymity | Topology |
+| --- | --- | --- | --- | --- |
+| BIP 77 mailbox | Store and forward | None, peer to peer | Message unlinkable towards the directory, if the OHTTP relay and the directory do not collude. Messages to one mailbox are linkable to each other by its ID. | Random phone call model: connectionless end to end, so a peer can reach any mailbox. The directory is a hub. |
+| OHTTP pubsub | Store and forward, by topic | Group (secret topic) and world (well known topic) | As for the BIP 77 mailbox, for each publish and each read. | Independent servers, connected to each other or not, like nostr relays. Peers bridge between them. |
+| Nostr with gift wrapping | Store and forward, by subscription | World | Each event is signed by a one-time key, so it does not name its author. The relay connection still identifies the client, and links the events sent on it. | Independent relays, connected to each other or not. Peers bridge between them. |
+| Tor | Connection oriented, low latency | None, peer to peer | Connection unlinkable. With connection isolation, one message per connection is message unlinkable. | LOCAL model: connection oriented, so it scales well only with a bounded number of connections per peer. |
+| Nym | Message based mixnet | None, peer to peer | Message unlinkable. Mixing delays and cover traffic resist timing correlation. | Random phone call model: connectionless end to end, so a peer can send to any peer at any time. |
+
+* **BIP 77 mailbox.** [BIP 77](https://github.com/bitcoin/bips/blob/master/bip-0077.md) payjoin already uses it, with directories reached through [OHTTP](https://www.rfc-editor.org/rfc/rfc9458) relays. It suits interactive payments and session initiation with a known peer: the receiver is identified by its mailbox, and the sender need not be.
+* **OHTTP pubsub.** A specialized service, with topics in place of mailboxes. It would serve group broadcast, and global gossip as well. It runs on a set of independent servers, much like nostr relays. A broadcast domain can span several servers, or be sharded across them, as long as some peers bridge between the servers and keep the network connected. None exists yet.
+* **Nostr with gift wrapping.** [Gift wrapping](https://github.com/nostr-protocol/nips/blob/master/59.md) hides the author in the event, not in the connection. Open gossip that is message unlinkable therefore needs one relay connection per message, over an anonymous channel.
+* **Tor.**
+  * It has by far the most adoption, compared with Nym or OHTTP mailboxes. [Anonymity loves company](https://freehaven.net/doc/wupss04/usability.pdf), so Tor is likely the better privacy choice, even though its guarantees are weaker than Nym's.
+  * Its guarantees are stronger than OHTTP's, with three hops instead of two. Neither resists a global passive adversary doing traffic analysis.
+  * It is not usable from a web app or progressive web app (PWA).
+  * Being connection oriented, it suits neighbor channels, and submission channels that carry one message per connection, using [stream isolation](https://spec.torproject.org/proposals/171-separate-streams.html).
+  * A cold start is slow, because building circuits takes many round trips. Once circuits are built, a new connection costs about the circuit's end to end latency, plus the exit node's connection to the server.
+  * A phone waking up pays the cold start. This is the main reason to also support OHTTP: a request takes only a few round trips, because the OHTTP relay keeps its connection to the gateway open. Being request and response oriented, OHTTP also keeps a client's requests unlinked at the server, without a separate connection for each.
+* **Nym.** [Nym](https://nym.com/docs) sends to any peer without a connection, so it suits the random phone call model. Mixing adds latency.
 
 ## Open questions
 
