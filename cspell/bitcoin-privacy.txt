@@ -1,6 +1,7 @@
 # Bitcoin and privacy vocabulary
 blockspace
 CoinJoin
+CoinSwap
 deanonymization
 deanonymize
 CLTV
@@ -13,18 +14,97 @@ HTLCs
 keytype
 locktime
 Merkle
+Merklized
 MuSig
 Payjoin
+permissioned
 permissionless
 preimages
 PSBT
 PSBTs
 pubkeys
 RIPEMD
+Samourai
 scriptSig
 scriptWitness
 sighash
+sneakernet
 taptree
 unlinkability
+unlinkable
 UTXO
 xpub
+backout
+feerates
+locktimes
+# Cited journals
+Academiae
+Scientiarum
+Hungaricae
+# Network science
+assortativity
+deanonymizes
+multiroute
+superconcentrator
+# Cited authors
+Chekuri
+Idleman
+Karrer
+Kishimoto
+Maurer
+Neudecker
+Orlin
+multiset
+satisfice
+satisficing
+sumset
+coindays
+precomputation
+Blocklace
+CoinSwap
+Merklized
+permissioned
+Samourai
+sneakernet
+unlinkable
+deanonymizing
+Bustapay
+CIOH
+counterfactually
+entropist
+fingerprintable
+multigraph
+NSNR
+payjoins
+KVACs
+minrelayfee
+multisignature
+standardness
+unaddressable
+vbyte
+vbytes
+WabiSabi
+wtxid
+# Cryptography
+HPKE
+# Mathematics
+elementwise
+unioning
+# Game theory
+rivalrous
+
+# Concurrent PSBT construction
+ANYONECANPAY
+CRDT
+globalseed
+joinpsbts
+keydata
+kickstarter
+nlocktime
+psbtv
+reserialization
+txns
+unioned
+unrepresentable
+unshuffled
+valuedata
