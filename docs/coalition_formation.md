@@ -147,7 +147,7 @@ Fully accepted proposals can then be broadcast for aggregation. A fully accepted
 
 Individual proposals commit to a specific set of BIP 322 ownership proofs so that the signatures on them are verifiable. Proposals that refer to expired ownership proofs are still considered valid, and more generally, proposals that commit to different ownership proofs are potentially valid as long there is a non-expired ownership proof associated with the UTXO, which is also used for input weight estimations. See the coalition formation proposal section below for details.
 
-Co-spend proposals aren't updatable or revocable once fully accepted, but they do have an expiry (specified in block height, MTU, or UTC time). More than one signature on the same proposal should be considered a flooding attack by all participants, and honest parties should only sign (MuSig2) a proposal once. Again, see below for discussion of flood protection with respect to partially accepted proposals.
+Co-spend proposals aren't updatable or revocable once fully accepted, but they do have an expiry (specified in block height, MTP, or UTC time). More than one signature on the same proposal should be considered a flooding attack by all participants, and honest parties should only sign (MuSig2) a proposal once. Again, see below for discussion of flood protection with respect to partially accepted proposals.
 
 However, co-spend proposals are able to explicitly include conflict hints for other proposals, indicating that (at least) the proposer of the conflicting proposal wouldn't accept a coalition formation proposal that depends on the excluded proposals.
 
@@ -185,7 +185,7 @@ Since the coalition formation proposal addresses every UTXO, its ownership proof
 
 #### Coalition formation proposal structure
 
-The surplus of all included co-spend proposals is added to the coalition formation proposal's adjustment vector, which covers all UTXOs. The coalition formation proposal's surplus must be positive and needs to cover the shared transaction fields at the set feerate, but otherwise, the aggregated surplus is at the discretion of the aggregator; it may be claimed as a coordination fee, redistributed among all parties arbitrarily, or included in the mining fees.
+🤖 The surplus of all included co-spend proposals belongs to the coalition. The aggregator proposes adjustments for each UTXO and an amount to allocate to mining fees. Some or all of the surplus may be allocated to mining fees, which must cover the shared transaction fields at the agreed feerate. These allocations take effect only if the coalition formation proposal is unanimously accepted.
 
 The logical conjunction of co-spend proposals implies the union of their adjusted UTXOs and the intersection of their conditions is in effect. The per-UTXO adjustments are collected for each outpoint. The total adjustment for each UTXO may not overflow its effective value, based on the range proof widths.
 
@@ -221,16 +221,6 @@ Additionally, it's possible to make use of a verifiable encryption scheme for th
 
 In contrast, in a semi-honest setting, and if acceptors don't mind revealing whether they accept to the proposer, the linkable ring signatures can be shortcut entirely and MuSig2 negotiated directly, with the proposer as the coordinator between all named parties. MuSig2 signing should still be initiated concurrently, even when linkable ring signatures are used to minimize the number of round trips.
 
-### PayJoin-like payments in multiparty transactions
-
-Payments requests or intents may be encoded in the co-spend proposals using the value adjustment mechanism. Even if fully accepted, such proposals are merely signalling the intention to pay, because finality is contingent on successful collaborative transaction construction.
-
-The sender and receiver must arrange for proposals to transfer the payment amount. This can be achieved by the receiver extending the sender's proposal with additional UTXOs (potentially of unrelated parties, although at least one UTXO should be the receiver's in order to claim the adjustment, and multiple proposals may be required to represent the full payment amount due to the range proof width restriction). The sender and receiver must collaborate to produce a balance proof, as only one or the other knows the openings of some of the homomorphic value adjustments.
-
-With this approach, fallback transactions as in BIPs 79-7 are no longer as prudent, since the receiver's UTXOs are much more difficult to probe. Neither sender nor receiver needs to disclose any UTXOs to each other; only the payment amount is fully known to both.
-
-Although out of scope for this document, peers also negotiate the payment details out of band and arrange for valid registration of the receiver outputs during transaction construction. In this setting, the receiver doesn't need to contribute a UTXO at all and may still get privacy from the sender, since their output(s) may be ambiguous, and there are no limitations arising from the use of width limited range proofs.
-
 ### Post quantum security and privacy
 
 Apart from the BIP-322 ownership proofs, which are related to spending keys, the signatures used throughout don't require PQ security for privacy (assuming perfectly hiding commitments) or safety, but only for liveness.
@@ -243,10 +233,6 @@ Finally, PQ privacy must of course also assume that metadata privacy at the tran
 
 ### Transaction construction protocol
 
-A transaction construction protocol can provide liveness, although in this setting, relying on KVACs would require one of the peers to serve as the coordinator, and it would be trusted. With modification, this coordinator could prove all transcript messages it accepted are valid, but may still arbitrarily censor certain operations, causing a UTXO to be unfairly blamed for failing to sign.
+🤖 The accepted coalition formation proposal specifies the initial inputs, their online keys, the negotiated adjustments and the parameters for [transaction construction](transaction-construction.md). It is the genesis of the construction instance. The initial state can be proven valid with respect to each UTXO's adjustment sum commitments, which enforces that the agreed imputation is in effect. When construction stalls, the [recovery track](recovery-track.md) turns the stall into a new coalition formation proposal among the responsive subset.
 
-Technically the coalition formation proposal can implement a coordination fee mechanism — for example, by making all adjustments slightly negative, apart from that of the coordinator (which may or may not be the aggregator). This provides the coordinator with an incentive to coordinate honestly on average. Unfortunately, this does little for any targeted censorship risk, so long as the payoff from censorship (of e.g. a specific TxOut) dominates over the expected loss of revenue from sabotaging a single attempt at transaction construction. It's likely that the majority of the revenue is still recoverable in a subsequent blame round, as the other participants have no indication that censorship has occurred.
-
-For a more robust mechanism, coalition formation outputs a set of online keys for a coalition, and among other things, these are intended to be used to implement byzantine fault tolerant state machine replication for transaction construction. The initial state, based on the coalition formation proposal, can be proven valid with respect to each UTXO's adjustment sum commitments, which enforces that the agreed to imputation is in effect.
-
-The state machine collects inputs and outputs of a transaction (or tree of transactions a la CoinJoinXT). Since state messages are self authenticating, authenticating using zero knowledge proofs (anonymous credentials or ring signatures), they can be posted anonymously, much like in a permissioned blockchain, where all peers act as validators.
+🤖 Any participant can act as an aggregator. Assembling a proposal gives that participant no additional privileges during transaction construction.
