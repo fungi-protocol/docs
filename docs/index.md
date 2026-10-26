@@ -22,19 +22,20 @@ okf_version: "0.2"
 # Privacy Optimization Strategy
 
 * [Optimization framework for Bitcoin wallets](optimization_framework.md) - Under review in #15.
-* [🤖 Pure Strategy Evaluation](pure_strategy_evaluation.md) - How the cost of a pure strategy is evaluated: the structure of the cost function, and its privacy liability terms.
+* [🤖 Pure Strategy Evaluation](pure_strategy_evaluation.md) - How the cost of a pure strategy is evaluated: the structure of the cost function, its privacy liability terms, and the privacy metrics they take as input.
   * [🤖 Cost function structure](cost_function_structure.md) - The structure shared by the family of cost functions that evaluate pure strategies: time dependence, linear combination of terms and bracketing.
   * [🤖 Privacy liability terms](cost_function_concrete.md) - What each privacy liability term of the cost function is for: the risk it prices, what it encourages, and how it relates to the others.
     * [Randomized selection and Sybil resistance](cost_function_randomized_selection.md) - Selection preferences that randomize which coins are co-spent, a Sybil resistance index measuring their effect, and a provenance term valuing coins by it.
-    * [🤖 Sybil resistance index](sybil_resistance_index.md) - A conservative lower bound on the number of candidate coins a transaction's inputs were selected from, and how to find the block hash they were selected with.
-    * [🤖 Others' inputs subset sum density](subset_sum_density.md) - Outline of subset sum density, how it's estimated, and how co-spend proposals and the aggregator optimize it.
     * [🤖 Own inputs or outputs subset sum ambiguity](cost_function_subset_sum_ambiguity.md) - Outline of a concrete cost function term for the subset sum ambiguity of output values.
-    * [🤖 Max flow based counterfactual path estimation](cost_function_counterfactual_paths.md) - Outline of a cost function term that estimates disjoint counterfactual paths with one max flow, and labels coins impervious to intersections.
     * [🤖 Consolidation penalty](cost_function_consolidation.md) - Outline of a concrete cost function term penalizing consolidation unless the subset sums are very dense and the coins are impervious to intersections.
     * [🤖 Sibling output penalty](cost_function_siblings.md) - Outline of a concrete cost function term penalizing spending sibling outputs together.
+  * [🤖 Privacy metrics](privacy_metrics.md) - Measures computed from public data that the privacy liability terms take as input.
+    * [🤖 Order book size estimation](sybil_resistance_index.md) - A relatively conservative estimate of a lower bound on the number of candidate coins a transaction's inputs were selected from, and how to find the block hash they were selected with.
+    * [🤖 Subset sum density](subset_sum_density.md) - Outline of subset sum density, how it's estimated, and how co-spend proposals and the aggregator optimize it.
+    * [🤖 Counterfactual paths](cost_function_counterfactual_paths.md) - Outline of how to count disjoint counterfactual paths with one max flow, and how to estimate the count.
+* [🤖 Mixed strategy](mixed_strategy.md) - How to compose a mixed strategy from the cost of pure strategies: randomization, time dependence, internalization and the decision loop.
 * [Tactics](tactics.md) - Generating the decision tree bottom up, with coin selection and change decomposition, and when to re-evaluate it.
   * [Bottom-up construction](bottom_up_construction.md) - Building the decision tree from the leaves: partitions of the intent queue, coin selection, change construction, order book coins, action sequences, and bracketing.
-* [🤖 Mixed strategy](mixed_strategy.md) - How to compose a mixed strategy from the cost of pure strategies: randomization, time dependence, internalization and the decision loop.
 
 # BIP Drafts
 
