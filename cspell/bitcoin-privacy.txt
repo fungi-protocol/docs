@@ -13,6 +13,7 @@ multiroute
 superconcentrator
 # Cited authors
 Chekuri
+Elkind
 Idleman
 Karrer
 Kishimoto
@@ -27,6 +28,7 @@ coindays
 precomputation
 blockspace
 CoinJoin
+CoinSwap
 deanonymization
 deanonymize
 CLTV
