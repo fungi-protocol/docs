@@ -2,7 +2,8 @@
 backout
 feerates
 locktimes
-# Cited journals
+# Cited journals and venues
+ESORICS
 Academiae
 Scientiarum
 Hungaricae

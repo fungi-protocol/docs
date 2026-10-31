@@ -1,10 +1,12 @@
 # Author names
 AdamISZ
 Androulaki
+Bobon
 Capkun
 Claessens
 Danezis
 Dorier
+Gavenda
 Ghesmati
 Gierlichs
 Goldfeder
@@ -27,11 +29,13 @@ Reisman
 Roeschlin
 Rollet
 Sabouri
+Sedlacek
 Serjantov
 Seys
 Shmatikov
 Stifter
 Stütz
+Svenda
 Syverson
 Troncoso
 Verbauwhede

@@ -548,6 +548,8 @@ The Boltzmann link probability matrix[^boltzmann] and Maurer et al.'s sub-transa
 
 What exactly makes a partition a valid sub-transaction mapping is whether or not the sub-transaction is deemed plausible. In Maurer et al., the values of the inputs and the outputs must exactly cancel out, which isn't sufficiently general for real-world analyses. Boltzmann casts a wider net by allowing these to vary somewhat, accounting for fees (including JoinMarket maker fees).
 
+🤖 Gavenda et al. generalize both models.[^gavenda] A sub-transaction balances up to that participant's fees, as in Boltzmann. Maurer et al. count only non-derived mappings, those that do not merge the sub-transactions of another mapping. Gavenda et al.'s mappings include the derived ones too. Mappings that differ only by a permutation of equal-valued coins are enumerated once, as *numeric* mappings.
+
 A large number of possible partitions does not by itself imply much privacy: Most of the probability may be concentrated on just a few of them. Entropy quantifies the uncertainty in this distribution, measured in bits.[^diaz][^serjantov-danezis][^syverson][^scroll-intersection]
 
 When a sub-transaction mapping is underdetermined, more than one assignment of inputs and outputs to separate sub-transactions remains possible. If several assignments have comparable probabilities, the adversary needs further information to distinguish them. The entropy of the distribution implies a lower bound on how much additional information is required. Output values can be deliberately chosen to create many possible assignments.[^radix]
@@ -989,6 +991,8 @@ Until such time, be skeptical of claims that PayJoin or even CoinJoin provide pr
 [^maxwell]: G. Maxwell, [*CoinJoin: Bitcoin privacy for the real world*](https://bitcointalk.org/index.php?topic=279249)
 
 [^maurer]: F. K. Maurer, T. Neudecker, M. Florian, [*Anonymous CoinJoin Transactions with Arbitrary Values*](https://www.comsys.rwth-aachen.de/publication/2017/2017_maurer_anonymous-coin-join-transactions-with/2017_maurer_anonymous-coin-join-transactions-with.pdf)
+
+[^gavenda]: J. Gavenda, P. Svenda, S. Bobon, V. Sedlacek, [*Analysis of Input-Output Mappings in Coinjoin Transactions with Arbitrary Values*](https://arxiv.org/abs/2510.17284) (ESORICS 2025, [doi:10.1007/978-3-032-07901-5_7](https://doi.org/10.1007/978-3-032-07901-5_7))
 
 [^ns-netflix]: A. Narayanan and V. Shmatikov, [*Robust De-anonymization of Large Sparse Datasets*](https://arxiv.org/abs/cs/0610105) (S&P 2008; the linked arXiv version is titled *How To Break Anonymity of the Netflix Prize Dataset*)
 
