@@ -4,14 +4,19 @@
 docs/index.md, the bundle's OKF index, states the chapter order: its
 headings become the parts of SUMMARY.md and its entries the chapters,
 without their descriptions, so an entry must name a chapter, by a path
-relative to docs/, and every chapter must have an entry. The README is
-the introduction, and the index, with its descriptions, is the contents
-page. Frontmatter is checked and then dropped, as mdbook would render it
-as text. The bundle's other files are copied as they are.
+relative to docs/, and every chapter must have an entry. An entry
+indented two spaces more than the entry above it is a sub-chapter of
+that entry. The README is the introduction, and the index, with its
+descriptions, is the contents page. Frontmatter is checked and then
+dropped, as mdbook would render it as text. Chapters are markdown pages
+and Jupyter notebooks, whose frontmatter is a raw cell that opens them.
+The bundle's other files are copied as they are, except for Jupyter's
+autosaves.
 
     python3 book.py ROOT
 """
 import argparse
+import json
 import posixpath
 import re
 import shutil
@@ -21,7 +26,7 @@ from pathlib import Path
 import yaml
 
 FRONTMATTER = re.compile(r"\A---\n(.*?)\n---[ \t]*(?:\n+|\Z)", re.DOTALL)
-ENTRY = re.compile(r"\* \[([^\]]+)\]\(([^)\s]+)\)(?: - .*)?")
+ENTRY = re.compile(r"( *)\* \[([^\]]+)\]\(([^)\s]+)\)(?: - .*)?")
 DOCS = "docs"
 # As set in book.toml.
 SRC = "src"
@@ -29,10 +34,33 @@ CONTENTS = "contents.md"
 GENERATED = ("README.md", "SUMMARY.md", CONTENTS)
 STATUSES = ("draft", "stable", "deprecated")
 RESERVED = ("index.md", "log.md")
+NOTEBOOK = ".ipynb"
+CHECKPOINTS = ".ipynb_checkpoints"
+# A sub-chapter's entry is indented this much more than its chapter's.
+INDENT = "  "
 
 
 def strip_frontmatter(text):
     return FRONTMATTER.sub("", text, count=1)
+
+
+def notebook_frontmatter(text):
+    """A notebook's frontmatter, as a markdown page would have it, if a
+    raw cell holding nothing else opens it, and the notebook without it."""
+    nb = json.loads(text)
+    cells = nb.get("cells", [])
+    if cells and cells[0].get("cell_type") == "raw":
+        head = "".join(cells[0].get("source", []))
+        if FRONTMATTER.fullmatch(head):
+            nb["cells"] = cells[1:]
+            return head, json.dumps(nb, indent=1, ensure_ascii=False) + "\n"
+    return "", text
+
+
+def body(name, text):
+    if name.endswith(NOTEBOOK):
+        return notebook_frontmatter(text)[1]
+    return strip_frontmatter(text)
 
 
 def frontmatter(text):
@@ -47,6 +75,8 @@ def check(name, text):
     has passed is not checked, so that a build does not depend on when it
     runs."""
     try:
+        if name.endswith(NOTEBOOK):
+            text = notebook_frontmatter(text)[0]
         fields = frontmatter(text)
     except (yaml.YAMLError, ValueError) as e:
         raise ValueError(f"{name}: {e}") from e
@@ -71,20 +101,35 @@ def check(name, text):
 def summary(index, pages):
     """SUMMARY.md from an OKF index: `# Part` headings and
     `* [Title](file.md) - description` entries, naming each of `pages`,
-    the paths in docs/ of the pages the book is given."""
+    the paths in docs/ of the pages the book is given. Indented entries
+    are nested under the entry above them."""
     out = ["# Summary", "", "[Introduction](README.md)", f"[Contents]({CONTENTS})"]
     listed = set()
+    # The depth of the entry above, or -1 at the start of a part, where
+    # there is none to nest under.
+    above = -1
     for line in strip_frontmatter(index).splitlines():
         if line.startswith("# "):
             out += ["", line, ""]
+            above = -1
         elif m := ENTRY.fullmatch(line):
-            chapter = posixpath.normpath(m.group(2))
+            depth, odd = divmod(len(m.group(1)), len(INDENT))
+            if odd:
+                raise ValueError(f"index entry has odd indentation: {line!r}")
+            if depth > above + 1:
+                if above < 0:
+                    raise ValueError(f"index entry has no entry above: {line!r}")
+                raise ValueError(
+                    f"index entry is nested more than one level deeper: {line!r}"
+                )
+            above = depth
+            chapter = posixpath.normpath(m.group(3))
             if chapter not in pages:
                 raise ValueError(f"index entry is not a chapter: {line!r}")
             if chapter in listed:
                 raise ValueError(f"index entry repeats a chapter: {line!r}")
             listed.add(chapter)
-            out.append(f"- [{m.group(1)}]({chapter})")
+            out.append(f"{INDENT * depth}- [{m.group(2)}]({chapter})")
         elif line.strip():
             raise ValueError(f"unexpected line in index: {line!r}")
     if unlisted := sorted(set(pages) - listed):
@@ -103,8 +148,8 @@ def assemble(root):
     docs, out = root / DOCS, root / SRC
     index = (docs / "index.md").read_text()
     pages = {}
-    for page in sorted(docs.rglob("*.md")):
-        if page.name not in RESERVED:
+    for page in sorted([*docs.rglob("*.md"), *docs.rglob("*" + NOTEBOOK)]):
+        if page.name not in RESERVED and CHECKPOINTS not in page.parts:
             name = page.relative_to(docs).as_posix()
             pages[name] = page.read_text()
             check(name, pages[name])
@@ -136,14 +181,14 @@ def assemble(root):
     shutil.copytree(
         docs,
         out,
-        ignore=shutil.ignore_patterns("*.md", ".gitignore"),
+        ignore=shutil.ignore_patterns("*.md", "*" + NOTEBOOK, CHECKPOINTS, ".gitignore"),
         dirs_exist_ok=True,
     )
     for name, text in generated.items():
         (out / name).write_text(text)
     for name, text in pages.items():
         (out / name).parent.mkdir(parents=True, exist_ok=True)
-        (out / name).write_text(strip_frontmatter(text))
+        (out / name).write_text(body(name, text))
 
 
 def main(argv=None):

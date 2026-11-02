@@ -1,3 +1,4 @@
+import json
 import re
 
 import book
@@ -13,6 +14,16 @@ okf_version: "0.2"
 * [Two](sub/two.md) - The second chapter.
 """
 CHAPTERS = {"one.md", "sub/two.md"}
+MARKDOWN_CELL = {"cell_type": "markdown", "metadata": {}, "source": ["# Three\n"]}
+
+
+def notebook(*cells):
+    nb = {"cells": list(cells), "metadata": {}, "nbformat": 4, "nbformat_minor": 5}
+    return json.dumps(nb, indent=1, ensure_ascii=False) + "\n"
+
+
+def raw_cell(text):
+    return {"cell_type": "raw", "metadata": {}, "source": text.splitlines(True)}
 
 
 def test_frontmatter_is_dropped_once():
@@ -42,6 +53,75 @@ def test_contents_keep_descriptions_under_one_title():
         "* [One](one.md) - The first chapter.\n"
         "* [Two](sub/two.md) - The second chapter.\n"
     )
+
+
+NESTED = """# Part
+
+* [One](one.md) - The first chapter.
+  * [Two](sub/two.md) - Under the first.
+    * [Three](three.md) - Under the second.
+
+  * [Four](four.md) - Under the first, after a blank line.
+* [Five](five.md) - The last chapter.
+"""
+NESTED_CHAPTERS = {"one.md", "sub/two.md", "three.md", "four.md", "five.md"}
+
+
+def test_summary_nests_indented_entries_under_the_entry_above():
+    assert book.summary(NESTED, NESTED_CHAPTERS) == (
+        "# Summary\n\n"
+        "[Introduction](README.md)\n"
+        "[Contents](contents.md)\n\n"
+        "# Part\n\n"
+        "- [One](one.md)\n"
+        "  - [Two](sub/two.md)\n"
+        "    - [Three](three.md)\n"
+        "  - [Four](four.md)\n"
+        "- [Five](five.md)\n"
+    )
+
+
+def test_contents_keep_the_nesting():
+    assert book.contents(NESTED) == (
+        "# Contents\n\n"
+        "## Part\n\n"
+        "* [One](one.md) - The first chapter.\n"
+        "  * [Two](sub/two.md) - Under the first.\n"
+        "    * [Three](three.md) - Under the second.\n\n"
+        "  * [Four](four.md) - Under the first, after a blank line.\n"
+        "* [Five](five.md) - The last chapter.\n"
+    )
+
+
+@pytest.mark.parametrize(
+    "index, error",
+    [
+        ("# Part\n\n  * [One](one.md)\n", "no entry above"),
+        ("  * [One](one.md)\n", "no entry above"),
+        ("* [One](one.md)\n\n# Part\n\n  * [Two](sub/two.md)\n", "no entry above"),
+        ("# Part\n\n* [One](one.md)\n    * [Two](sub/two.md)\n", "more than one level"),
+        ("# Part\n\n* [One](one.md)\n * [Two](sub/two.md)\n", "odd indentation"),
+        ("# Part\n\n* [One](one.md)\n   * [Two](sub/two.md)\n", "odd indentation"),
+        ("# Part\n\n* [One](one.md)\n\t* [Two](sub/two.md)\n", "unexpected line"),
+        ("# Part\n\n* [One](one.md)\n  # Sub\n", "unexpected line"),
+    ],
+)
+def test_summary_rejects_entries_it_cannot_nest(index, error):
+    with pytest.raises(ValueError, match=error):
+        book.summary(index, CHAPTERS)
+
+
+def test_summary_rejects_a_nested_chapter_listed_twice():
+    with pytest.raises(ValueError, match="repeats a chapter"):
+        book.summary(
+            "# Part\n\n* [One](one.md)\n  * [Two](sub/two.md)\n  * [Again](one.md)\n",
+            CHAPTERS,
+        )
+
+
+def test_summary_rejects_a_nested_entry_that_is_not_a_chapter():
+    with pytest.raises(ValueError, match="not a chapter"):
+        book.summary("# Part\n\n* [One](one.md)\n  * [Gone](gone.md)\n", CHAPTERS)
 
 
 @pytest.mark.parametrize(
@@ -118,6 +198,31 @@ def test_check_reads_frontmatter_that_ends_the_page():
 def test_check_rejects_a_page_without_a_type_status_or_stale_after(text, error):
     with pytest.raises(ValueError, match=f"one.md: .*{error}"):
         book.check("one.md", text)
+
+
+def test_a_notebooks_frontmatter_is_the_raw_cell_that_opens_it():
+    head = "---\ntype: Chapter\nstatus: stable\n---"
+    text = notebook(raw_cell(head), MARKDOWN_CELL)
+    assert book.notebook_frontmatter(text) == (head, notebook(MARKDOWN_CELL))
+    book.check("three.ipynb", text)
+
+
+@pytest.mark.parametrize(
+    "cells",
+    [
+        [MARKDOWN_CELL],
+        [MARKDOWN_CELL, raw_cell("---\ntype: Chapter\nstatus: stable\n---")],
+        [raw_cell("---\ntype: Chapter\nstatus: stable\n---\n\nMore.\n"), MARKDOWN_CELL],
+    ],
+)
+def test_check_rejects_a_notebook_that_opens_without_frontmatter(cells):
+    with pytest.raises(ValueError, match="three.ipynb: no type"):
+        book.check("three.ipynb", notebook(*cells))
+
+
+def test_check_rejects_a_notebook_that_is_not_json():
+    with pytest.raises(ValueError, match="three.ipynb: Expecting value"):
+        book.check("three.ipynb", "# Three\n")
 
 
 def test_assembly_skips_reserved_files_at_any_level(tmp_path):
@@ -286,3 +391,19 @@ def test_assembly_ignores_itself_when_the_copy_fails(tmp_path, monkeypatch):
     with pytest.raises(OSError):
         book.assemble(root)
     assert (out / ".gitignore").read_text() == "*\n"
+
+
+def test_assembly_makes_chapters_of_notebooks_without_their_frontmatter(tmp_path):
+    root, out = tmp_path / "root", tmp_path / "root" / "src"
+    (root / "docs" / ".ipynb_checkpoints").mkdir(parents=True)
+    (root / "README.md").write_text("# Intro\n")
+    (root / "docs" / "index.md").write_text("# Part\n\n* [Three](three.ipynb)\n")
+    head = "---\ntype: Chapter\nstatus: stable\n---"
+    (root / "docs" / "three.ipynb").write_text(notebook(raw_cell(head), MARKDOWN_CELL))
+    # Jupyter's autosaves are neither chapters nor part of the book.
+    checkpoint = root / "docs" / ".ipynb_checkpoints" / "three-checkpoint.ipynb"
+    checkpoint.write_text(notebook(MARKDOWN_CELL))
+    book.assemble(root)
+    assert (out / "three.ipynb").read_text() == notebook(MARKDOWN_CELL)
+    assert "- [Three](three.ipynb)\n" in (out / "SUMMARY.md").read_text()
+    assert not (out / ".ipynb_checkpoints").exists()
