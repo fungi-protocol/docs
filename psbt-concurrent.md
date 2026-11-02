@@ -6,7 +6,7 @@ New fields and rules for combining PSBTs in a distributed setting. This provides
 
 ## Motivation
 
-In a distributed system it is easier to deliver messages without guaranteeing the order of delivery is consistent across nodes. To build a transaction, participants only need to agree on which inputs it spends and which outputs it creates. They don't need to agree on the order in which those inputs and outputs were added. This document defines an order insensitive merging procedure which generalizes the *Combiner* role (defined in BIP 174) to non-identical PSBTs which may still overlap in some of their data. A consistent ordering procedure is also defined for producing a consistent PSBT which can subsequently be manipulated using the normal BIP 174 roles.
+In a distributed system it is easier to deliver messages without guaranteeing the order of delivery is consistent across nodes. To build a transaction, participants need to agree on which inputs it spends, which outputs it creates, and how those inputs and outputs are ordered, since consensus requires a specific order. They don't need to agree on the order in which those inputs and outputs were added. This document defines a strict *Combiner*, an order insensitive merging procedure which restricts the *Combiner* role (defined in BIP 174) by failing on conflicting values, and extends it to non-identical PSBTs which may still overlap in some of their data. A consistent ordering procedure is also defined for producing a consistent PSBT which can subsequently be manipulated using the normal BIP 174 roles.
 
 ## Background
 
@@ -110,7 +110,7 @@ Outputs are identified by a new `PSBT_OUT_UNIQUE_ID` field, which must be univer
 
 This ensures that repeated addition of the same output is idempotent, but that if two different distributed constructors both attempt to add an identical output (same `PSBT_OUT_VALUE` and `PSBT_OUT_SCRIPT`), that will still result in two copies of the output as intended. This is important because a transaction with only a single copy will appear correct but end up losing the value of all missing copies to mining fees.
 
-// TODO: if we merge two output how do we decide which id identifies the new one with the usmmer value?
+// TODO: if we merge two output how do we decide which id identifies the new one with the summed value?
 Outputs with an identical `PSBT_OUT_SCRIPT` MAY be merged, and their values summed together after `PSBT_GLOBAL_TX_UNORDERED` is cleared and an order is determined, using BIP 370 construction rules. See the next section on ordering.
 
 ### Unordered input and output sets
@@ -125,7 +125,7 @@ Unordered PSBTs MUST be shuffled prior to reserialization. If all inputs and out
 
 Not shuffling presents a privacy hazard, leaking information about the sequence of actions leading to a transaction's construction. When a transaction is unordered, shuffling by definition doesn't change its meaning, but ensures the incidental order can't accidentally be relied upon.
 
-### Ordering inputs and ouputs
+### Ordering inputs and outputs
 
 - TODO: unique ID can be derived by sorting even if sort key is empty, but txn finalization must not be unless all sort keys are provided explicitly (regardless of DETERMINISTIC)
 
@@ -148,9 +148,9 @@ A missing `PSBT_IN_SORT_KEY` is derived as:
 where `H_s` is a BIP 341 style tagged hash, with the tag preimage being `BIP ???? deterministic ordering` (TODO pick a real domain separator).
 
 If any sort key is missing, ordering can only proceed after `PSBT_GLOBAL_SORT_SEED` is set.
-If `PSBT_GLOBAL_SORT_SEED` is set and an individual field-level sort seed is set. The inidivudal sort seed will be ignored and replaced by the determinsitic key defined above.
+If `PSBT_GLOBAL_SORT_SEED` is set, any explicit `PSBT_IN_SORT_KEY` or `PSBT_OUT_SORT_KEY` is ignored and replaced by the deterministic key defined above.
 
-A *Creator* creating an unordered transaction SHOULD set `PSBT_GLOBAL_SORT_DETERMINISTIC` to enure consistent ordering rules are enforced.
+A *Creator* creating an unordered transaction SHOULD set `PSBT_GLOBAL_SORT_DETERMINISTIC` to ensure consistent ordering rules are enforced.
 
 In applications where this is desirable, the *Creator* should only set `PSBT_GLOBAL_SORT_DETERMINISTIC` to `0x01`, and leave `PSBT_GLOBAL_SORT_SEED` unset. Each replica will locally provide a value for `PSBT_GLOBAL_SORT_SEED` just in time, as a commitment to protocol transcript or something similar.
 
@@ -167,7 +167,7 @@ This can provides additional integrity to a collaborative transaction constructi
 A canonical ID MAY be needed to if replicas are attempting to tell if they are holding the same PSBT.
 For unordered transactions (i.e `PSBT_GLOBAL_TX_UNORDERED` is set), the `PSBT_GLOBAL_SORT_SEED` and `PSBT_IN_SORT_KEY` and `PSBT_OUT_SORT_KEY` fields are cleared, and then the ordering procedure of the previous section is used without the restriction of a non-empty `PSBT_GLOBAL_SORT_SEED` (sorting with an empty seed).
 
-In the case the PSBT is ordered, its the same prodcedure just no sorting.
+In the case the PSBT is ordered, its the same procedure just no sorting.
 
 TODO: domain separation from PSBT v2, it doesn't make sense to treat an ordered BIP 370 PSBT as the same PSBT even if it agrees on its content when it doesn't agree that the order is meaningless. how to do this? hashing output unique IDs of outputs is insufficient for domain separation of input only partially constructed PSBTs, but maybe that's OK.
 
