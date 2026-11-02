@@ -1,0 +1,111 @@
+
+### Confirmation of successful payment prior to signing
+
+Parties which neither send nor receive payments within a transaction can safely sign so long as all of their intended outputs are covered by the input signature. This may require signing more than once if some messages are delayed, but TODO see also termination via explicit fee contributions.
+
+If there is any net transfer between the parties, it is insufficient for a sender (any party that makes an outgoing payment to another party within the transaction regardless of their net send/receive balance) to rely only on the signature comitting to the outputs they added, because some of their funds will be used by other parties and their actions need to have been registered as well.
+
+Before signing, every sender must wait until it has positive confirmation of the PSBT's unique ID (which commits to the full output set) from every one of its receivers, and that in every case the confirmed ID matches the one they derive locally.
+
+Every recevier whose net balance is non-negative (they may be a sender too but they receive at least as much as they send) can confirm the unique PSBT ID to their respective senders output set contains all of their added outputs.
+
+Every receiver whose balance is net negative (they send more than they receive) must wait for confirmation from all receivers for whom it is a sender before it confirms the unique ID to the senders for whom it is a receiver.
+
+If there is a cyclic payment graph, for example Alice pays Bob, Bob pays Carol, and Carol pays Alice, net positive receivers can safely initiate confirmations, breaking the circular dependency, because senders will sign will only occur after all receivers have confirmed and if all net positive receivers have confirmed then all funds are accounted for. At least one such node must exist in every cyclic payment structure, since the sum of the payments along a cycle will be 0.
+
+If there is any mismatch in the confirmations, either the receiver or the sender has not yet received the full message set. If a receiver learns of an additional input or output after previously confirming, they must confirm the new unique ID which incorporates this additional data. If a sender learns of an additional input or output, they can derive a new unique ID, and stop waiting if this matches all of their receivers' confirmations.
+
+Such a confirmation mechanism does not require an agreement or consensus mechanism, only eventual consistency. If messages are guaranteed to be delivered eventually then every receiver will eventually confirm a consistent least upper bound.
+
+TODO sender/receiver examples, including an example with a receiver that contributes no inputs, only outputs
+
+TODO net-sender, net-receiver, explain in terms of breaking cyclic graph to a tree with net-receivers at the leaves, propagate confirmation up the chain.
+
+### Input or output removal (optional)
+
+As in BIP 174, the combination of several PSBTs must contain all the key-value pairs from each of the input PSBTs.
+
+If support for removal of inputs and outputs is needed, two global fields `PSBT_GLOBAL_REMOVED_INPUT` and `PSBT_GLOBAL_REMOVED_OUTPUT` can be used to represent a [two phase set](https://en.wikipedia.org/wiki/Conflict-free_replicated_data_type#2P-Set_(Two-Phase_Set)) by specifying the inputs or outputs to be removed in the keydata. Inputs or outputs whose unique IDs are specified must be pruned from the input or output.
+
+Because inputs are identified by outpoint, an input spending the same coin as an input whose outpoint is in the set of removed inputs can't normally be added. Therefore we introduce an optional `PSBT_IN_UNIQUE_ID` field, whose value (if provided) is appended to the outpoint.
+
+Support for removal is entirely optional. Implementations may explicitly fail when combining with a PSBT that sets either `PSBT_GLOBAL_REMOVED_INPUT` or `PSBT_GLOBAL_REMOVED_OUTPUT`, but completely ignoring these fields is fail safe.
+
+Assuming [`SIGHASH_ALL` is used](#divergence-and-sighash-flags), it's sufficient to simply rely on the signature hashing. If an output was removed, a peer which does not implement removal it will diverge from those that do, and therefore produce a signature that will not be valid for the transaction supporting peers will produce and subsequently sign, and vice versa, ensuring that neither transaction is valid.
+
+This optionality extends the `PSBT_IN_UNIQUE_ID` field, a removal and re-insertion with incompatible data will either cause combination to fail due to a mismatch or succeed by ignoring the removal and treating the insertion as idempotent, but otherwise diverge.
+
+While this would allow limited interoperability among clients, that is not reccomended, and is described as an argument for the safety of omitting any removal related functionality. Implementations which omit removal functionality SHOULD fail or at least warn if combining a PSBT that signals removal.
+
+TODO: while combine is monotone of data / PSBT fields including removals, it is no longer monotone in transaction effects. This does not present a safety issue if [only `SIGHASH_ALL` is used](#divergence-and-sighash-flags).
+
+Rationale for optionality: not implementing is safe, couldn't find usage of `tx_remove_{input,output}`, non-monotonic state makes termination / limits trickier.
+
+TODO for interactive-tx, set `PSBT_IN_UNIQUE_ID` to odd parity `serial_id`. this makes it possible to support `tx_remove_{input,output}` operations.
+
+| Removed Input | `PSBT_GLOBAL_REMOVED_INPUT = TBD` | `<bytes input unique id>` | `PSBT_IN_UNIQUE_ID`  of an input removed from the logical input set. | None | No value data. |
+| Removed Output | `PSBT_GLOBAL_REMOVED_OUTPUT = TBD` | `<bytes output unique id>` | `PSBT_OUT_UNIQUE_ID` removed from the logical output set. | None | No value data. |
+
+#### Termination
+
+knowing when to proceed to signing
+
+- global fee contribution
+  - `PSBT_GLOBAL_EXPLICIT_FEE_CONTRIBUTION`
+  - keydata = 16 byte uuid
+  - value = u64 amount of funds explicitly contributed as fees
+  - needs `PSBT_IN_NON_WITNESS_UTXO` or `PSBT_IN_WITNESS_UTXO` for nominal value
+  - effective values/costs would a specific feerate and input size estimation,
+    instead all such fee contributions should also be added (but can be
+    computed deterministically in case this is known)
+
+inputs before outputs?
+only rely on payment ACKs
+
+### PSBT CRDT (optional)
+
+In some circumstances a conflict free replicated data type (CRDT) can be defined as a subtype of (unordered) PSBTs. In a CRDT, in addition to being idempotent, commutative and associative, combination is additionally [guaranteed to succeed](https://en.wikipedia.org/wiki/Semilattice).
+
+Success here means producing a useful output, which ideally would guarantee a transaction that would be valid if fully signed, which also conforms to standardness policy. This can only be guaranteed under assumptions that must be realized by some additional protocol, beyond the scope of this document.
+
+#### Size Limits
+
+advisory fields: `MAX_WEIGHT_PER_PARTICIPANT`, `MAX_TRANSACTION_WEIGHT` (default 400000?) - determines max number of participants while also signalling size limit is enforced
+
+if every participant effectively restricts the domain by respecting the limit the least upper bound is guaranteed not to exceed the limit making the join valid.
+
+assumes the number of partcipants can be restricted via some external mechanism.
+
+==== no version of any document needs this information
+
+The BIP 174 *Combiner* role specifies how to merge diverging copies of the same PSBT. PSBTs are considered "the same", by identifying them based on the unsigned transaction. Two PSBTs with the same unsigned transaction but potentially different key value pairs are considered two versions of the same PSBT.
+
+BIP 370 introduces the notion of a [unique ID](https://github.com/bitcoin/bips/blob/master/bip-0370.mediawiki#user-content-Unique_Identification) which is computed as a hash that commits to inputs being spent and the new outputs being created, thereby ensuring PSBTs with the same ID have the same structure, but abstracting away some details of the transaction, thereby introducing a notion of equivalence that is a bit more general.
+
+The effects of a transaction on the distribution of money are determined by its effects the UTXO set: which outputs does it spend and create. However, with regards to money changing hands, we would like to treat equivalent outputs as interchangeable by disregarding the specific outpoints by which specific coins are identified.
+
+Both notions of identity ensure that PSBTs with the same ID have the same effects, but it is not true that PSBTs with the same effects will have the same ID, since depends on the specific order of the inputs and outputs, among other things. By abstracting over these details we obtain a more general notion of PSBT identity than in BIP 370. The details of how to compute this ID are [provided below](#unique-identifiers).
+
+---
+
+# TODO
+
+- new PSBT version?
+  - con: new PSBT version
+    pro: deserializing unordered txns in psbtv2 will error instead of
+    potentially leaking unshuffled input/output order
+
+- Move inline rationales to their own section
+
+- BIP 174 describes how to aggregate signatures via combiner. example includes a manual coinjoin flow, joining of PSBTs not defined in the spec. technically this involves two different PSBTs. discuss what happens when not sequential, as well as conceptual issues.
+
+---
+
+- discuss liveness. safety WRT transaction effects is nice but we also want to
+  minimize irrecoverable failures. discuss both generally and in CRDT section.
+
+
+
+TODO global sort seed || hash of fee contributions or expect application to commit to that in transcript if appropriate?
+
+TODO: Rationale for allowing explicit sort key: lightning interactive-tx `serial_id` field. should always use odd parity form, encoded in network order so that lexicographical sorting works the same as the interactive-tx sorting rule.
