@@ -4,7 +4,7 @@ okf_version: "0.2"
 
 # Protocol Suite
 
-* [Overview](overview.md) - Collaborative transaction construction, privacy, fault tolerance and coalition formation.
+* [Overview](overview.md) - Collaborative transaction construction, privacy, fault tolerance, and coalition formation.
 
 # BIP Drafts
 
