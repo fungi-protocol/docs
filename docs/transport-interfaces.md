@@ -28,7 +28,7 @@ The protocol should make progress even if a channel delivers only one message at
 
 With some well-defined way to transmit messages from one peer to another, we can start to reason about how synchronization between peers can happen by using interactivity. Communication serves two purposes: peers exchange payment details directly with their counterparties, and send transaction contributions to the group as a whole.
 
-In order to realize peer-to-peer channels, any transport that provides authentication, integrity and confidentiality may be used. This allows peers to send messages to each other directly, for initiating as well as carrying out transaction construction.
+In order to realize peer-to-peer channels, any transport that provides authentication, integrity, and confidentiality may be used. This allows peers to send messages to each other directly, for initiating as well as carrying out transaction construction.
 
 🤖 The protocol needs three kinds of messaging:
 
@@ -56,7 +56,7 @@ In order to realize peer-to-peer channels, any transport that provides authentic
 
 An authenticated channel may identify the sender of a message, which would be problematic for this notion of privacy. Even if the sender isn't authenticated, transport-related metadata such as IP addresses can leak information about the sender. If transaction fragments are exchanged this way, this can indicate links between inputs and outputs that belong to the same user, even when the final transaction would leave those relationships ambiguous to an outside observer. This is an undesirable trust assumption.
 
-Preserving privacy requires anonymous broadcast to the group. Overlay networks such as Tor can be used to anonymously send messages to peers for relaying. The privacy guarantees of the underlying transport form the basis of message unlinkability, and once a message is not linked to its owner it can be relayed even on a non-anonymous channel. While this can also be achieved without external dependencies, for example using DC-nets, this approach does not scale to large numbers of participants, and is hard to make fault tolerant in addition to still revealing transport-related metadata.
+Preserving privacy requires anonymous broadcast to the group. Overlay networks such as Tor can be used to anonymously send messages to peers for relaying. The privacy guarantees of the underlying transport form the basis of message unlinkability, and once a message isn't linked to its owner it can be relayed even on a non-anonymous channel. While this can also be achieved without external dependencies, for example using DC-nets, this approach doesn't scale to large numbers of participants, and is hard to make fault tolerant in addition to still revealing transport-related metadata.
 
 🤖 Two properties describe what a send channel reveals to the peer that receives its messages:
 
