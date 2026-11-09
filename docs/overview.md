@@ -8,7 +8,9 @@ stale_after: 2026-10-31T00:00:00Z
 
 # Fungi protocol overview
 
-Fungi is a suite of protocols for collaborative Bitcoin transactions. Its goal is to support interactive payments and net settlement with counterparties, as well as decentralized, market-based CoinJoins with untrusted parties.
+Bitcoin transactions are public, and the published research on wallet clustering shows that privacy on-chain is harder to achieve than commonly claimed. Collaborative transactions, in which several parties build one transaction together, can break the links that clustering relies on, but only if the way the transaction is constructed and the way peers are chosen don't reveal those links again. The [problem definition](./collaborative_txn_privacy.md) sets out what an observer can infer and what a claim of privacy on-chain has to withstand.
+
+Fungi is a suite of protocols for building such transactions between peers who are mutually consenting but distrusting. Its goal is to support interactive payments and net settlement with counterparties, as well as decentralized, market-based CoinJoins with untrusted parties. The protocols aim for safety (no participant can take another's funds), liveness (misbehaving peers can be excluded so the others can try again), and unlinkability of protocol messages. This overview describes how they work. The rest of the repository specifies them in detail.
 
 While the protocols themselves support arbitrary transaction structures, obtaining privacy outcomes is a matter of participants acting in their own self-interest and cooperating with others to achieve the desired results. The [problem definition](./collaborative_txn_privacy.md) describes conditions for a transaction graph to preserve privacy on-chain. These conditions are specified in terms of properties of the graph, both the transactions that form it and its overall structure. The repository also discusses the definition of a [cost function](./cost_function_abstract.md) for optimizing for this outcome. That said, the protocols for collaborative transactions summarized in this document are agnostic to the details of such a cost function.
 
