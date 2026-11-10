@@ -1,6 +1,8 @@
 # Repository tools, identifiers, and upstream authors
 cacheprovider
+capsys
 DejaVu
+derandomize
 devshell
 DNSSEC
 dontInstall
