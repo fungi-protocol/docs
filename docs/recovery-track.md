@@ -5,7 +5,7 @@ status: draft
 stale_after: 2026-11-06T00:00:00Z
 ---
 
-# 🤖 Recovery track
+# Recovery track
 
 This chapter is under review. Its draft is on [its branch](https://github.com/fungi-protocol/docs/blob/recovery-track/docs/recovery-track.md).
 
