@@ -34,7 +34,7 @@ In the "sneakernet" setting, participants can pass around a single PSBT file, ed
 
 ## Consistency, safety, and liveness
 
-Consistency has to don't just with peers synchronizing their states, but also detecting when they have been successfully synchronized. Two properties of distributed systems related to this are safety and liveness: Safety excludes unacceptable outcomes; liveness concerns whether the protocol eventually completes.[^safety-liveness]
+Consistency has to do not just with peers synchronizing their states, but also detecting when they have been successfully synchronized. Two properties of distributed systems related to this are safety and liveness: Safety excludes unacceptable outcomes; liveness concerns whether the protocol eventually completes.[^safety-liveness]
 
 Because transactions are subject to the safety guarantees of the Bitcoin protocol, collaborative transaction construction can more or less take it for granted. In all transaction construction variants, the consistency requirement is agreeing on the exact unsigned transaction. We assume `SIGHASH_ALL`, which means that a signature by an input only authorizes that exact transaction, with its full list of inputs and outputs. In order to combine the signatures and obtain a fully valid transaction, all of the signatures must be made against the same transaction data.
 
