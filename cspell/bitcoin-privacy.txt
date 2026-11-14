@@ -28,3 +28,12 @@ taptree
 unlinkability
 UTXO
 xpub
+ANYONECANPAY
+globalseed
+joinpsbts
+keydata
+Kickstarter
+nlocktime
+reserialization
+unrepresentable
+valuedata
