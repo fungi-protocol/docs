@@ -1,3 +1,4 @@
+import base64
 import hashlib
 
 import mermaid_ssr
@@ -25,3 +26,11 @@ def test_diagram_missing_from_the_prerendered_set_fails(tmp_path, monkeypatch):
     monkeypatch.setenv("MERMAID_SVG_DIR", str(tmp_path))
     with pytest.raises(SystemExit):
         mermaid_ssr.render(SOURCE + "  b --> c\n", "default", "mermaid-1-light")
+
+
+def test_pandoc_gets_the_light_diagram_as_an_image(tmp_path, monkeypatch):
+    prerender(tmp_path, SOURCE, "default", '<svg id="MERMAID_SSR_ID"/>')
+    monkeypatch.setenv("MERMAID_SVG_DIR", str(tmp_path))
+    svg = base64.b64encode(b'<svg id="mermaid-2"/>').decode()
+    assert mermaid_ssr.image(SOURCE, 2) == (
+        "\n\n![](data:image/svg+xml;base64,%s)\n\n" % svg)

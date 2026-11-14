@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""mdbook preprocessor: render ```mermaid blocks to inline SVG with mmdc.
+"""mdbook preprocessor: render ```mermaid blocks to SVG with mmdc.
 
 Expects the `mmdc` from nix/mermaid.nix, which comes wrapped with the
 headless chromium it drives. If MERMAID_SVG_DIR is set, it renders nothing
@@ -7,6 +7,7 @@ itself: it takes each diagram from MERMAID_SVG_DIR/<sha256 of its
 source>/<theme>.svg, as nix/mermaid.nix renders them, with PLACEHOLDER
 standing for the svg id.
 """
+import base64
 import hashlib
 import json
 import os
@@ -69,7 +70,17 @@ def block(source, index):
     ) + "\n\n"
 
 
-def walk(items, counter):
+def image(source, index):
+    """The light theme of one diagram, as an image for the pandoc renderer.
+
+    Inline svg is html, which pandoc drops from a LaTeX document.
+    """
+    svg = render(source, "default", "mermaid-%d" % index)
+    return "\n\n![](data:image/svg+xml;base64,%s)\n\n" % base64.b64encode(
+        svg.encode()).decode()
+
+
+def walk(items, counter, emit):
     for item in items:
         chapter = item.get("Chapter")
         if not chapter:
@@ -77,18 +88,19 @@ def walk(items, counter):
 
         def substitute(match):
             counter[0] += 1
-            return block(match.group("body"), counter[0])
+            return emit(match.group("body"), counter[0])
 
         chapter["content"] = FENCE.sub(substitute, chapter["content"])
-        walk(chapter["sub_items"], counter)
+        walk(chapter["sub_items"], counter, emit)
 
 
 def main():
     if len(sys.argv) > 1 and sys.argv[1] == "supports":
         sys.exit(0)
-    _context, book = json.load(sys.stdin)
+    context, book = json.load(sys.stdin)
+    emit = image if context["renderer"] == "pandoc" else block
     # mdbook 0.5 renamed the top level key from `sections` to `items`.
-    walk(book.get("items", book.get("sections")), [0])
+    walk(book.get("items", book.get("sections")), [0], emit)
     json.dump(book, sys.stdout)
 
 
