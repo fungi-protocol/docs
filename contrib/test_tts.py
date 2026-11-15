@@ -66,3 +66,31 @@ def test_name_depends_only_on_text():
     assert tts.name("Hello.") == tts.name("Hello.")
     assert tts.name("Hello.") != tts.name("Hello!")
     assert len(tts.name("Hello.")) == 16
+
+
+def test_sections_cut_before_headings():
+    markdown = "Lead.\n\n## Trust scope\n\nFirst.\n\n- Item\n\n### Roles\n\nSecond.\n"
+    assert tts.sections(markdown) == [
+        {"title": "", "level": 0, "text": "Lead."},
+        {"title": "Trust scope", "level": 2, "text": "Trust scope.\nFirst.\nItem."},
+        {"title": "Roles", "level": 3, "text": "Roles.\nSecond."},
+    ]
+
+
+def test_sections_join_to_the_text():
+    markdown = "# Title\n\nOne.\n\n```\n# not a heading\n```\n\n## Next\n\nTwo.\n"
+    assert "\n".join(s["text"] for s in tts.sections(markdown)) == tts.text(markdown)
+    assert [s["title"] for s in tts.sections(markdown)] == ["Title", "Next"]
+
+
+def test_no_sections_without_text():
+    assert tts.sections("```mermaid\nA\n```\n") == []
+
+
+def test_starts_add_up_durations():
+    cut = [{"title": t, "level": 2, "text": ""} for t in "ABC"]
+    assert tts.starts(cut, [1.5, 2.25, 3]) == [
+        {"title": "A", "level": 2, "start": 0.0},
+        {"title": "B", "level": 2, "start": 1.5},
+        {"title": "C", "level": 2, "start": 3.75},
+    ]

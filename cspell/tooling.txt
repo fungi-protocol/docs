@@ -5,10 +5,12 @@ devshell
 DNSSEC
 dontInstall
 dylanowen
+fetchurl
 fileset
 foldl
 fontconfig
 Graphviz
+hexgrad
 KaTeX
 Kokoro
 lzanini
