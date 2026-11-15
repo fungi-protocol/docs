@@ -18,7 +18,14 @@ after = ["links", "graphviz"]
 command = "mdbook-katex"
 after = ["links"]
 
+# Reads the chapters' source, before the other preprocessors render it.
+[preprocessor.narration]
+command = "python3 contrib/narration.py"
+after = ["links"]
+before = ["graphviz", "mermaid", "katex"]
+
 [output.html]
-additional-css = ["theme/diagrams.css"]
+additional-css = ["theme/diagrams.css", "theme/narration.css"]
+additional-js = ["theme/narration.js"]
 git-repository-url = "https://github.com/fungi-protocol/docs"
 site-url = "/docs/"

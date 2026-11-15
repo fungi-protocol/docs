@@ -18,6 +18,7 @@ mdBook
 mmdc
 NixOS
 nixpkgs
+nums
 pkgs
 prerender
 prerendered

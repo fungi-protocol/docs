@@ -49,11 +49,13 @@
         ];
 
         MERMAID_SVG_DIR = mermaidSvgs markdown;
+        TTS_AUDIO_DIR = narration chapters;
 
         buildPhase = ''
           export FONTCONFIG_FILE=${fontconfig}
           python3 contrib/book.py .
           mdbook build -d $out
+          cp -rL $TTS_AUDIO_DIR $out/tts
         '';
 
         dontInstall = true;
