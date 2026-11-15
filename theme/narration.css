@@ -1,0 +1,197 @@
+/* The player theme/narration.js builds, floating at the bottom of the page. */
+:root {
+  --narration-moss: #556b2f;
+}
+:is(.coal, .navy, .ayu) {
+  --narration-moss: #8f9f62;
+}
+
+.narration-capsule {
+  position: fixed;
+  inset-inline: 0;
+  bottom: max(16px, env(safe-area-inset-bottom));
+  margin-inline: auto;
+  width: min(560px, calc(100vw - 32px));
+  box-sizing: border-box;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px 8px 8px;
+  color: var(--fg);
+  background: var(--theme-popup-bg);
+  border: 1px solid var(--theme-popup-border);
+  border-radius: 999px;
+  box-shadow: 0 6px 24px rgb(0 0 0 / 0.25);
+  font-size: 1.4rem;
+}
+
+.narration-capsule[hidden] {
+  display: none;
+}
+
+.narration-capsule button,
+.narration-capsule select {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+.narration-play {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--narration-moss) !important;
+  color: var(--bg) !important;
+}
+
+.narration-play svg,
+.narration-toggle svg {
+  width: 22px;
+  height: 22px;
+  fill: currentColor;
+}
+
+.narration-track {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+}
+
+/* Drawn by hand, since browsers differ in how far accent-color reaches a
+   range input. --progress, set by narration.js, fills the part played. */
+.narration-timeline {
+  display: block;
+  width: 100%;
+  height: 20px;
+  margin: 0;
+  background: none;
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+}
+
+.narration-timeline::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 2px;
+  background: linear-gradient(to right, var(--narration-moss) var(--progress, 0%), var(--theme-popup-border) 0);
+}
+
+.narration-timeline::-moz-range-track {
+  height: 4px;
+  border-radius: 2px;
+  background: linear-gradient(to right, var(--narration-moss) var(--progress, 0%), var(--theme-popup-border) 0);
+}
+
+.narration-timeline::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
+  margin-top: -5px;
+  border: none;
+  border-radius: 50%;
+  background: var(--narration-moss);
+}
+
+.narration-timeline::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border: none;
+  border-radius: 50%;
+  background: var(--narration-moss);
+}
+
+/* The section marks sit on the timeline; only the marks take clicks. */
+.narration-marks {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.narration-mark {
+  position: absolute;
+  top: 50%;
+  width: 12px;
+  height: 20px;
+  padding: 0 !important;
+  transform: translate(-50%, -50%);
+  pointer-events: auto;
+}
+
+.narration-mark::before {
+  content: "";
+  display: block;
+  width: 1px;
+  height: 8px;
+  margin: auto;
+  background: var(--icons);
+  opacity: 0.35;
+}
+
+.narration-mark:hover::before,
+.narration-mark:focus-visible::before {
+  width: 2px;
+  height: 12px;
+  background: var(--narration-moss);
+  opacity: 1;
+}
+
+.narration-time {
+  flex: none;
+  color: var(--icons);
+  font-variant-numeric: tabular-nums;
+}
+
+.narration-rate {
+  flex: none;
+  min-width: 3.2em;
+  padding: 4px 6px;
+  border-radius: 6px;
+  font-variant-numeric: tabular-nums;
+}
+
+.narration-voice {
+  flex: none;
+  max-width: 7em;
+}
+
+.narration-close {
+  flex: none;
+  font-size: 1.3em !important;
+  line-height: 1;
+  padding: 0 4px;
+  color: var(--icons) !important;
+}
+
+.narration-capsule :is(button, select, input):focus-visible {
+  outline: 2px solid var(--narration-moss);
+  outline-offset: 2px;
+}
+
+.narration-capsule :is(.narration-rate, .narration-close, .narration-voice):hover {
+  color: var(--icons-hover) !important;
+  background: var(--theme-hover);
+}
+
+.narration-toggle.narration-active {
+  color: var(--narration-moss);
+}
+
+@media (max-width: 480px) {
+  .narration-time {
+    display: none;
+  }
+}
+
+@media print {
+  .narration-capsule,
+  .narration-toggle,
+  .narration {
+    display: none !important;
+  }
+}
