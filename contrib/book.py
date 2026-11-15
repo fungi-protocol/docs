@@ -7,9 +7,10 @@ without their descriptions, so an entry must name a chapter, by a path
 relative to docs/, and every chapter must have an entry. The README is
 the introduction, and the index, with its descriptions, is the contents
 page. Frontmatter is checked and then dropped, as mdbook would render it
-as text. The bundle's other files are copied as they are.
+as text. The bundle's other files are copied as they are. A PDF of the
+book, if given, is copied too and linked from the contents page.
 
-    python3 book.py ROOT
+    python3 book.py [--pdf FILE] ROOT
 """
 import argparse
 import posixpath
@@ -26,6 +27,8 @@ DOCS = "docs"
 # As set in book.toml.
 SRC = "src"
 CONTENTS = "contents.md"
+# mdbook copies src/ files that are not chapters into the site.
+PDF = "fungi-docs.pdf"
 GENERATED = ("README.md", "SUMMARY.md", CONTENTS)
 STATUSES = ("draft", "stable", "deprecated")
 RESERVED = ("index.md", "log.md")
@@ -92,14 +95,15 @@ def summary(index, pages):
     return "\n".join(out) + "\n"
 
 
-def contents(index):
-    """The contents page: the index with its descriptions, its parts one
-    heading level down."""
+def contents(index, pdf):
+    """The contents page: a link to the PDF if `pdf`, then the index with
+    its descriptions, its parts one heading level down."""
     body = re.sub(r"^# ", "## ", strip_frontmatter(index), flags=re.MULTILINE)
-    return "# Contents\n\n" + body
+    link = f"Also as a [PDF]({PDF}).\n\n" if pdf else ""
+    return "# Contents\n\n" + link + body
 
 
-def assemble(root):
+def assemble(root, pdf=None):
     docs, out = root / DOCS, root / SRC
     index = (docs / "index.md").read_text()
     pages = {}
@@ -119,8 +123,9 @@ def assemble(root):
     generated = {
         "README.md": re.sub(r"(?<=\]\()docs/", "", (root / "README.md").read_text()),
         "SUMMARY.md": summary(index, pages),
-        CONTENTS: contents(index),
+        CONTENTS: contents(index, pdf is not None),
     }
+    pdf_bytes = pdf.read_bytes() if pdf is not None else None
     # mdbook serve watches src/ itself and skips what the root .gitignore
     # matches, so src/ is emptied rather than replaced, and ignores itself
     # before anything else is written to it.
@@ -144,12 +149,16 @@ def assemble(root):
     for name, text in pages.items():
         (out / name).parent.mkdir(parents=True, exist_ok=True)
         (out / name).write_text(strip_frontmatter(text))
+    if pdf_bytes is not None:
+        (out / PDF).write_bytes(pdf_bytes)
 
 
 def main(argv=None):
     p = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     p.add_argument("root", type=Path)
-    assemble(p.parse_args(argv).root)
+    p.add_argument("--pdf", type=Path, help="the book as a PDF")
+    args = p.parse_args(argv)
+    assemble(args.root, args.pdf)
 
 
 if __name__ == "__main__":

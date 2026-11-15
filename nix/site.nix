@@ -41,7 +41,7 @@
 
         buildPhase = ''
           export FONTCONFIG_FILE=${fontconfig}
-          python3 contrib/book.py .
+          python3 contrib/book.py --pdf ${pdf}/fungi-docs.pdf .
           mdbook build -d $out
         '';
 
