@@ -3,10 +3,29 @@
 
 A chapter's readable text is read aloud as one audio file named by the hash
 of that text, so audio rendered from other text is never mistaken for it.
+
+Each section, cut before each of the chapter's headings, is read on its
+own, so an edit re-reads only its section. nix/tts.nix runs
+
+    python3 tts.py sections MARKDOWN
+
+to print the sections as JSON, reads each section to a FLAC file with
+contrib/speak.py, then runs
+
+    python3 tts.py join MARKDOWN OUT FLAC...
+
+to join them into OUT/<name>.mp3, with the start of each section in
+OUT/<name>.json.
 """
 import hashlib
 import json
 import subprocess
+import sys
+import tempfile
+from pathlib import Path
+
+# Kokoro's output rate, as contrib/speak.py writes it.
+SAMPLE_RATE = 24000
 
 
 def name(text):
@@ -19,11 +38,27 @@ def text(markdown):
 
     Kokoro reads each line as its own segment and cuts longer lines itself.
     """
-    return "\n".join(units(markdown))
+    return "\n".join(unit for _, unit in units(markdown))
+
+
+def sections(markdown):
+    """Return the chapter's text cut before each heading, as title, heading
+    level (0 before the first heading) and text.
+
+    Joined by newlines, the sections' texts are the chapter's text.
+    """
+    cut = []
+    for level, unit in units(markdown):
+        if level or not cut:
+            cut.append({"title": unit.rstrip(".") if level else "", "level": level, "text": unit})
+        else:
+            cut[-1]["text"] += "\n" + unit
+    return cut
 
 
 def units(markdown):
-    """Yield headings, list items and paragraphs as plain text.
+    """Yield headings, list items and paragraphs as plain text, each with its
+    heading level, 0 if it is not a heading.
 
     pandoc parses the chapter as GitHub Flavored Markdown, which has the
     extensions the book uses: tables, footnotes, alerts and dollar math.
@@ -44,9 +79,9 @@ def blocks(content, stop):
     for block in content:
         kind, c = block["t"], block.get("c")
         if kind == "Header" and (text := words(c[2])):
-            yield full_stop(text)
+            yield c[0], full_stop(text)
         elif kind in ("Para", "Plain") and (text := words(c)):
-            yield full_stop(text) if stop else text
+            yield 0, full_stop(text) if stop else text
         elif kind in ("BulletList", "OrderedList"):
             for item in c if kind == "BulletList" else c[1]:
                 yield from blocks(item, stop=True)
@@ -79,3 +114,48 @@ def words(inlines):
         elif kind == "Link" and words(c[1]) != c[2][0]:
             out.append(words(c[1]))
     return " ".join("".join(out).split())
+
+
+def starts(sections, durations):
+    """Return each section's title, level and start in seconds."""
+    marks, at = [], 0.0
+    for section, duration in zip(sections, durations):
+        marks.append({"title": section["title"], "level": section["level"], "start": round(at, 2)})
+        at += duration
+    return marks
+
+
+def join(markdown_path, out_dir, parts):
+    """Join the sections' FLAC files into OUT_DIR/<name>.mp3 and .json."""
+    import numpy
+    import soundfile
+
+    markdown = Path(markdown_path).read_text()
+    cut = sections(markdown)
+    assert len(cut) == len(parts), "one FLAC file per section"
+    out_dir = Path(out_dir)
+    out_dir.mkdir(parents=True, exist_ok=True)
+    if not parts:
+        return
+    audio = [soundfile.read(p)[0] for p in parts]
+    stem = out_dir / name(text(markdown))
+    stem.with_suffix(".json").write_text(
+        json.dumps(starts(cut, [len(a) / SAMPLE_RATE for a in audio])))
+    with tempfile.NamedTemporaryFile(suffix=".wav") as wav:
+        soundfile.write(wav.name, numpy.concatenate(audio), SAMPLE_RATE)
+        subprocess.run(["ffmpeg", "-loglevel", "error", "-i", wav.name,
+                        "-ac", "1", "-b:a", "64k", str(stem.with_suffix(".mp3"))], check=True)
+
+
+def main():
+    command, args = sys.argv[1] if len(sys.argv) > 1 else None, sys.argv[2:]
+    if command == "sections" and len(args) == 1:
+        json.dump(sections(Path(args[0]).read_text()), sys.stdout)
+    elif command == "join" and len(args) >= 2:
+        join(args[0], args[1], args[2:])
+    else:
+        sys.exit(__doc__)
+
+
+if __name__ == "__main__":
+    main()
