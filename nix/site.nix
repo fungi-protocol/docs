@@ -53,7 +53,7 @@
         inherit site;
         book =
           pkgs.runCommand "book-tests"
-            { nativeBuildInputs = [ (pkgs.python3.withPackages (ps: [ ps.pytest ps.pyyaml ])) ]; }
+            { nativeBuildInputs = [ pkgs.pandoc (pkgs.python3.withPackages (ps: [ ps.pytest ps.pyyaml ])) ]; }
             ''
               cd ${../contrib}
               pytest -p no:cacheprovider
