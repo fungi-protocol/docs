@@ -24,6 +24,7 @@ RIPEMD
 scriptSig
 scriptWitness
 sighash
+tapleaf
 taptree
 unlinkability
 UTXO
