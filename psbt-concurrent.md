@@ -99,8 +99,11 @@ To represent this, we define a global field `PSBT_GLOBAL_TX_UNORDERED`, indicati
 When `PSBT_GLOBAL_TX_UNORDERED` is set, the input or output maps are not distinguished by their index, but instead by a unique identifier defined for each input or output.
 
 Inputs or outputs with identical unique IDs are merged by combining their key-value pairs with the stricter, idempotent combination [defined above](#strict-combiner). After merging the inputs and outputs that appear in both PSBTs, the strict Combiner additionally keeps the ones that appear in only one of them.
+The Strict combiner, MUST update `PSBT_GLOBAL_INPUT_COUNT` and/or `PSBT_GLOBAL_OUTPUT_COUNT` if combining introduces new inputs and/or outputs.
 
-Distinct identifiers are only allowed if the corresponding BIP 370 `PSBT_GLOBAL_TX_MODIFIABLE` flag is set, because such combinations represent additions of inputs or outputs. If this is not the case but a distinct input or output is present, then combining MUST fail.[^tx-modifiable]
+// TODO: provide some examples here
+
+The strict Combiner MUST fail combining for either the inputs or outputs if the corresponding BIP 370 `PSBT_GLOBAL_TX_MODIFIABLE` flag is set and the combinations represent additions of inputs or outputs. [^tx-modifiable]
 
 Unordered PSBTs MUST be shuffled prior to reserialization.[^shuffle] If all inputs and outputs have [sort keys](#ordering-inputs-and-outputs), the key-based ordering MAY be used instead of shuffling.
 
@@ -110,11 +113,11 @@ Inputs are identified by their outpoint, i.e. the tuple of their `PSBT_IN_PREVIO
 
 #### Unique identifiers for outputs
 
-Outputs are identified by a new `PSBT_OUT_UNIQUE_ID` field, which MUST be universally unique (e.g. 16 bytes of randomness).
+Outputs are identified by a new `PSBT_OUT_UNIQUE_ID` field, which MUST be 16 bytes of uniform randomness.
 
 This ensures that repeated addition of the same output is idempotent, and that if two replicas both attempt to add an identical output (same `PSBT_OUT_AMOUNT` and `PSBT_OUT_SCRIPT`), it will still result in two copies of the output as intended. This is important because a transaction with only a single copy will appear correct but end up losing the value of all missing copies to mining fees.
 
-Outputs with an identical `PSBT_OUT_SCRIPT` MAY be merged deterministically by adding their amounts after sorting, using BIP 370 construction rules. Merging during sorting is not allowed, because a merged output has no `PSBT_OUT_UNIQUE_ID`. The merged output takes the position of the first of the outputs it replaces. Unique IDs are no longer required once sorted, because outputs are then identified by position. See the next section on ordering.
+Outputs with an identical `PSBT_OUT_SCRIPT` MAY be merged deterministically by adding their amounts after sorting. Merging during sorting is NOT allowed, because a merged output has no `PSBT_OUT_UNIQUE_ID`. The merged output takes the position of the first of the outputs it replaces and the `PSBT_GLOBAL_OUTPUT_COUNT` must be decremented by the number of outputs merged. Unique IDs are no longer required once sorted, because outputs are then identified by position. See the next section on ordering.
 
 ### Ordering inputs and outputs
 
@@ -192,7 +195,7 @@ Existing software can parse and preserve the new fields as [BIP 174 requires](ht
 
 Clients convert to BIP 174 by carrying the new fields as proprietary fields, then following the BIP 370 conversion. Convert a BIP 174 PSBT to BIP 370 before sorting or applying the strict Combiner.
 
-While `PSBT_GLOBAL_TX_UNORDERED` is set, PSBTs MUST be combined only by a strict Combiner, not the BIP 174 Combiner. Once `PSBT_GLOBAL_TX_UNORDERED` is cleared, the caller MAY convert to BIP 370 or BIP 174. The new fields need not be retained.
+While `PSBT_GLOBAL_TX_UNORDERED` is set, PSBTs MUST be combined only by a strict Combiner, not the BIP 174 Combiner. Once `PSBT_GLOBAL_TX_UNORDERED` is cleared the PSBT is semantically the same as a BIP 370 or BIP 174. The new fields need not be retained.
 
 For BIP 174, input unique IDs may be extracted from the unsigned transaction in the global map. For BIP 370, they may be extracted from the input map (`PSBT_IN_PREVIOUS_TXID` and `PSBT_IN_OUTPUT_INDEX`). However, output unique IDs MUST NOT be derived from the output maps (`PSBT_OUT_AMOUNT` and `PSBT_OUT_SCRIPT`).
 
