@@ -80,6 +80,12 @@
                   mmdc -i ${builtins.toFile "diagram.mmd" body} -o $out/$theme.svg \
                     -b transparent -t $theme -I MERMAID_SSR_ID
                 done
+                mmdc -i ${builtins.toFile "diagram.mmd" body} -o $out/pdf.svg \
+                  -b transparent -t default -I MERMAID_SSR_ID \
+                  -c ${pkgs.writeText "mermaid-pdf.json" (builtins.toJSON {
+                    htmlLabels = false;
+                    flowchart.htmlLabels = false;
+                  })}
               '';
         };
     in

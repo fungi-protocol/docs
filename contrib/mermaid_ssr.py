@@ -15,6 +15,8 @@ import re
 import subprocess
 import sys
 import tempfile
+import xml.etree.ElementTree as ET
+from html import unescape
 
 # Fence length varies: preprocessors that re-serialize the markdown (mdbook-graphviz)
 # emit four backticks, so the closing fence has to match the opening one.
@@ -23,6 +25,9 @@ FENCE = re.compile(
     re.S | re.M,
 )
 PLACEHOLDER = "MERMAID_SSR_ID"
+SVG = "http://www.w3.org/2000/svg"
+ET.register_namespace("", SVG)
+ET.register_namespace("xlink", "http://www.w3.org/1999/xlink")
 
 
 def render(source, theme, svg_id):
@@ -42,9 +47,16 @@ def render(source, theme, svg_id):
         svg = os.path.join(tmp, "out.svg")
         with open(mmd, "w") as f:
             f.write(source)
+        args = ["mmdc", "-i", mmd, "-o", svg,
+                "-b", "transparent", "-t", "default" if theme == "pdf" else theme,
+                "-I", svg_id]
+        if theme == "pdf":
+            config = os.path.join(tmp, "config.json")
+            with open(config, "w") as f:
+                json.dump({"htmlLabels": False, "flowchart": {"htmlLabels": False}}, f)
+            args += ["-c", config]
         result = subprocess.run(
-            ["mmdc", "-i", mmd, "-o", svg,
-             "-b", "transparent", "-t", theme, "-I", svg_id],
+            args,
             capture_output=True,
             text=True,
         )
@@ -71,11 +83,21 @@ def block(source, index):
 
 
 def image(source, index):
-    """The light theme of one diagram, as an image for the pandoc renderer.
+    """One diagram with native SVG labels, as an image for the pandoc renderer.
 
     Inline svg is html, which pandoc drops from a LaTeX document.
     """
-    svg = render(source, "default", "mermaid-%d" % index)
+    svg = render(source, "pdf", "mermaid-%d" % index)
+    root = ET.fromstring(svg)
+    # librsvg otherwise collapses leading spaces in adjacent text spans.
+    root.set("{http://www.w3.org/XML/1998/namespace}space", "preserve")
+    for label in root.iter("{%s}text" % SVG):
+        for node in label.iter():
+            if node.text:
+                node.text = unescape(node.text)
+            if node.tail:
+                node.tail = unescape(node.tail)
+    svg = ET.tostring(root, encoding="unicode")
     return "\n\n![](data:image/svg+xml;base64,%s)\n\n" % base64.b64encode(
         svg.encode()).decode()
 
