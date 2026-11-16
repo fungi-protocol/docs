@@ -132,8 +132,6 @@ If `PSBT_GLOBAL_SORT_KEY_DERIVATION` is set to `0x00`, every input and output MU
 
 If the global field `PSBT_GLOBAL_SORT_KEY_DERIVATION` is set to `0x01`, input and output sort keys MUST NOT be set and every sort key is derived (as [defined below](#derivation-rules)) using the `PSBT_GLOBAL_SORT_SEED`. `PSBT_GLOBAL_SORT_SEED` MAY be left unset until sorting, but MUST be set at the time of sorting and contain at least 128 bits of randomness.
 
-If `PSBT_GLOBAL_SORT_KEY_DERIVATION` is omitted, then at the time of sorting either every input and output MUST have an explicit sort key and `PSBT_GLOBAL_SORT_SEED` MUST NOT be set, or `PSBT_GLOBAL_SORT_SEED` MUST be set and explicit sort keys MUST NOT be set.
-
 ##### Derivation rules
 
 Sort keys are derived as:
@@ -145,7 +143,7 @@ where `H_s` is a BIP 340-style tagged hash, with the tag being `ConcurrentPSBTDe
 
 #### Mixed
 
-If `PSBT_GLOBAL_SORT_KEY_DERIVATION` is absent and some subset of inputs and outputs are missing explicit sort keys, then the `PSBT_GLOBAL_SORT_SEED` MUST be set at the time of sorting and is used to derive the missing sort keys.[^mixed-mode]
+If `PSBT_GLOBAL_SORT_KEY_DERIVATION` is omitted, explicit sort keys are used where present and every missing sort key is derived.[^mixed-mode] If any input or output is missing an explicit sort key, `PSBT_GLOBAL_SORT_SEED` MUST be set at the time of sorting. If every input and output has an explicit sort key, no sort keys are derived.
 
 ### Canonical Identifier
 
