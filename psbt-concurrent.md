@@ -155,8 +155,6 @@ For unordered transactions (i.e. `PSBT_GLOBAL_TX_UNORDERED` is set), the `PSBT_G
 
 The ID MUST then be computed as the BIP 370 unique ID of the sorted transaction, with the double SHA256 replaced by a BIP 340-style tagged hash with the tag `ConcurrentPSBTUnorderedState`.[^canonical-id] This keeps the ID of an unordered PSBT distinct from the ID of an ordered PSBT with the same contents, even when it has no outputs.
 
-If the PSBT is ordered, the BIP 370 unique ID is used unchanged, without sorting.
-
 ### Divergence and SIGHASH flags
 
 Signers MUST sign only using `SIGHASH_ALL`.[^sighash-all]
