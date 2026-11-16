@@ -18,6 +18,7 @@
           ../book.toml
           ../docs
           ../theme
+          ../contrib/pdf-layout.lua
           (lib.fileset.fileFilter (f: f.hasExt "py" && !lib.hasPrefix "test_" f.name) ../contrib)
         ];
       };
@@ -55,15 +56,38 @@
           pkgs.pandoc
           # pandoc converts the mermaid SVGs to PDF with rsvg-convert.
           pkgs.librsvg
-          pkgs.texliveSmall
+          (pkgs.texlive.combine {
+            inherit (pkgs.texlive) scheme-small newunicodechar fvextra;
+          })
         ];
         # MDBOOK_OUTPUT replaces the [output] table of book.toml, so this
         # build runs only the pandoc renderer.
         MDBOOK_OUTPUT = builtins.toJSON {
-          pandoc.profile.pdf.output-file = "fungi-docs.pdf";
+          pandoc.markdown.extensions.math = true;
+          pandoc.profile.pdf = {
+            output-file = "fungi-docs.pdf";
+            pdf-engine = "xelatex";
+            filters = [ "contrib/pdf-layout.lua" ];
+            variables.header-includes = ''
+              \usepackage{newunicodechar}
+              \newfontface\robotfont[Path=${pkgs.noto-fonts-monochrome-emoji}/share/fonts/noto/]{NotoEmoji.ttf}
+              \newunicodechar{🤖}{{\normalfont\robotfont\char"1F916\relax}}
+              \providecommand{\lt}{<}
+              \providecommand{\gt}{>}
+              \fvset{breaklines,breakanywhere,fontsize=\footnotesize}
+              \usepackage{etoolbox}
+              % Leave paragraph space around tall images to avoid fvextra's output loop.
+              \ifdefined\pandocbounded
+                \patchcmd{\pandocbounded}{\textheight}
+                  {\dimexpr\textheight-\baselineskip-2\parskip\relax}
+                  {}{\errmessage{Cannot reserve image spacing}}
+              \fi
+            '';
+          };
         };
         buildPhase = ''
           export FONTCONFIG_FILE=${fontconfig}
+          export XDG_CACHE_HOME=$(mktemp -d)
           python3 contrib/book.py .
           mdbook build -d book
           install -D book/pdf/fungi-docs.pdf $out/fungi-docs.pdf
@@ -75,7 +99,12 @@
         inherit site pdf;
         book =
           pkgs.runCommand "book-tests"
-            { nativeBuildInputs = [ (pkgs.python3.withPackages (ps: [ ps.pytest ps.pyyaml ])) ]; }
+            {
+              nativeBuildInputs = [
+                pkgs.pandoc
+                (pkgs.python3.withPackages (ps: [ ps.pytest ps.pyyaml ]))
+              ];
+            }
             ''
               cd ${../contrib}
               pytest -p no:cacheprovider

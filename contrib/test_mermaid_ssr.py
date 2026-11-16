@@ -1,5 +1,6 @@
 import base64
 import hashlib
+import xml.etree.ElementTree as ET
 
 import mermaid_ssr
 import pytest
@@ -28,9 +29,16 @@ def test_diagram_missing_from_the_prerendered_set_fails(tmp_path, monkeypatch):
         mermaid_ssr.render(SOURCE + "  b --> c\n", "default", "mermaid-1-light")
 
 
-def test_pandoc_gets_the_light_diagram_as_an_image(tmp_path, monkeypatch):
-    prerender(tmp_path, SOURCE, "default", '<svg id="MERMAID_SSR_ID"/>')
+def test_pandoc_uses_pdf_labels_with_spaces_and_decoded_entities(tmp_path, monkeypatch):
+    prerender(tmp_path, SOURCE, "pdf", (
+        '<svg xmlns="http://www.w3.org/2000/svg" id="MERMAID_SSR_ID"><text>'
+        "<tspan>Bob's</tspan><tspan> change</tspan><tspan> 0.1</tspan>"
+        '<tspan>&amp;nbsp;?&amp;nbsp;</tspan></text></svg>'
+    ))
     monkeypatch.setenv("MERMAID_SVG_DIR", str(tmp_path))
-    svg = base64.b64encode(b'<svg id="mermaid-2"/>').decode()
-    assert mermaid_ssr.image(SOURCE, 2) == (
-        "\n\n![](data:image/svg+xml;base64,%s)\n\n" % svg)
+    markdown = mermaid_ssr.image(SOURCE, 2)
+    encoded = markdown.split("base64,", 1)[1].split(")", 1)[0]
+    svg = ET.fromstring(base64.b64decode(encoded))
+    assert svg.attrib["id"] == "mermaid-2"
+    assert svg.attrib["{http://www.w3.org/XML/1998/namespace}space"] == "preserve"
+    assert "".join(svg.itertext()) == "Bob's change 0.1\u00a0?\u00a0"
