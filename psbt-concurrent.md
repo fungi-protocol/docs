@@ -104,7 +104,7 @@ Outputs are identified by a new `PSBT_OUT_UNIQUE_ID` field, which MUST be 16 byt
 
 This ensures that repeated addition of the same output is idempotent, and that if two replicas both attempt to add an identical output (same `PSBT_OUT_AMOUNT` and `PSBT_OUT_SCRIPT`), it will still result in two copies of the output as intended. This is important because a transaction with only a single copy will appear correct but end up losing the value of all missing copies to mining fees.
 
-Outputs with an identical `PSBT_OUT_SCRIPT` MAY be merged deterministically by adding their amounts after sorting. Merging during sorting is NOT allowed, because a merged output has no `PSBT_OUT_UNIQUE_ID`. The merged output takes the position of the first of the outputs it replaces and the `PSBT_GLOBAL_OUTPUT_COUNT` must be decremented by the number of outputs merged. Unique IDs are no longer required once sorted, because outputs are then identified by position. See the next section on ordering.
+Outputs with an identical `PSBT_OUT_SCRIPT` MAY be merged deterministically by adding their amounts after sorting. Merging during sorting is NOT allowed, because a merged output has no `PSBT_OUT_UNIQUE_ID`. The merged output takes the position of the first of the outputs it replaces and the `PSBT_GLOBAL_OUTPUT_COUNT` must be decremented by one less than the number of outputs merged. Unique IDs are no longer required once sorted, because outputs are then identified by position. See the next section on ordering.
 
 ### Ordering inputs and outputs
 
