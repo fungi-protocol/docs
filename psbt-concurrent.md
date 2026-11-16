@@ -20,13 +20,7 @@ BIP 370 introduced a *Constructor* role, which allows signaling that the inputs 
 
 ### `joinpsbts`
 
-Bitcoin Core implements a [`joinpsbts`](https://bitcoincore.org/en/doc/30.0.0/rpc/rawtransactions/joinpsbts/) RPC command that allows merging PSBTs, so long as their spent output sets are disjoint.
-
-`joinpsbts` is not idempotent with respect to inputs (writing it as $+$, idempotence would mean that $A + A = A$). Attempting to join a PSBT more than once fails closed: if $B$ contains an input, and $A + B$ is defined, then $(A + B) + B$ will fail, because a transaction cannot spend the same coin twice.
-
-`joinpsbts` is also not idempotent with respect to the outputs, potentially leading to overspending: if $B$ contains just an output, then $B + B$ will contain two copies of that output.
-
-`joinpsbts` is not strictly associative or commutative, because it shuffles. $(A + B) + C$ can serialize differently from $A + (B + C)$, and $A + B$ from $B + A$. The same coins are spent and the same payments created either way. However, in a concurrent setting, replicas will have diverging copies of the PSBT.
+Bitcoin Core implements a [`joinpsbts`](https://bitcoincore.org/en/doc/32.0.0/rpc/rawtransactions/joinpsbts/) RPC command that allows merging PSBTs, so long as their input sets are disjoint. For example, if PSBT A spends coin x and B spends y they can be joined however not with PSBT C which spends x as well. In other words, `joinpsbts` is not idompotents with respect to the inputs nor the outputs -- which can lead to over spending. For example, joining a PSBT with distinct inputs but the same outputs will create two identical outputs. Lastly, `joinpsbt` is not associative or commutative because it shuffles. In the concurrent setting this will lead to replicas having divering copies.
 
 ## Specification
 
