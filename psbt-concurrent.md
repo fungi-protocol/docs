@@ -20,7 +20,7 @@ BIP 370 introduced a *Constructor* role, which allows signaling that the inputs 
 
 ### `joinpsbts`
 
-Bitcoin Core implements a [`joinpsbts`](https://bitcoincore.org/en/doc/32.0.0/rpc/rawtransactions/joinpsbts/) RPC command that allows merging PSBTs, so long as their input sets are disjoint. For example, if PSBT A spends coin x and B spends y they can be joined however not with PSBT C which spends x as well. In other words, `joinpsbts` is not idompotents with respect to the inputs nor the outputs -- which can lead to over spending. For example, joining a PSBT with distinct inputs but the same outputs will create two identical outputs. Lastly, `joinpsbt` is not associative or commutative because it shuffles. In the concurrent setting this will lead to replicas having divering copies.
+Bitcoin Core implements a [`joinpsbts`](https://bitcoincore.org/en/doc/32.0.0/rpc/rawtransactions/joinpsbts/) RPC command that allows merging PSBTs, so long as their input sets are disjoint. For example, if PSBT A spends coin x and B spends y they can be joined however not with PSBT C which spends x as well. In other words, `joinpsbts` is not idempotent with respect to the inputs nor the outputs -- which can lead to over spending. For example, joining a PSBT with distinct inputs but the same outputs will create two identical outputs. Lastly, `joinpsbts` is not associative or commutative because it shuffles. In the concurrent setting this will lead to replicas having diverging copies.
 
 ## Specification
 
@@ -214,4 +214,4 @@ Rust implementation: <https://github.com/fungi-protocol/concurrent-psbt/>
 
 [^canonical-id]: Replicas compare canonical IDs to check that they hold the same data. A plain transaction ID also commits to the order of inputs and outputs, but the canonical ID sorts with an empty seed, so its order might not be the final order. The tag marks the ID as order-independent, so a matching ID does not signal agreement on order.
 
-[^conflict-ok]: Are there certain keys where it would be acceptable to have conflicting values? Yes (e.g tapleaf BIP 32 sources TODO: get key type), however the PSBTs format forbids multiple enteries. Custom join procedures should require BIP extensions and outside the scope of this BIP.
+[^conflict-ok]: Are there certain keys where it would be acceptable to have conflicting values? Yes (e.g tapleaf BIP 32 sources TODO: get key type), however the PSBTs format forbids multiple entries. Custom join procedures should require BIP extensions and outside the scope of this BIP.
