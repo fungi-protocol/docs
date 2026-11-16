@@ -73,7 +73,7 @@ flowchart LR
 
 ### Strict Combiner
 
-BIP 174 lets a [Combiner](https://github.com/bitcoin/bips/blob/master/bip-0174.mediawiki#user-content-Combiner) resolve a key that has two different values by picking either one. That is safe when every PSBT shares the same unsigned transaction, because the worst outcome is an invalid signature. Once inputs and outputs can differ between copies, picking one value can change what the transaction spends or pays, and the result depends on the order in which copies were combined.
+BIP 174 lets a [Combiner](https://github.com/bitcoin/bips/blob/master/bip-0174.mediawiki#user-content-Combiner) resolve a key that has two different values by picking either one. That is safe when every PSBT shares the same unsigned transaction, because the worst outcome is an invalid signature. Once inputs and outputs can differ between copies, picking one value can change what the transaction spends or pays, and the result depends on the order in which copies were combined.[^conflict-ok]
 
 A strict Combiner therefore MUST fail when the same key has conflicting values. With this rule, the transaction effects of combining a set of PSBTs do not depend on the order or grouping of the combinations, or on whether a PSBT is combined more than once. The following sections define exceptions that keep these properties.
 
@@ -213,3 +213,5 @@ Rust implementation: <https://github.com/fungi-protocol/concurrent-psbt/>
 [^mixed-mode]: Mixed mode allows clients to fix the relative order of some of their own inputs and outputs with explicit sort keys while the PSBT is merged with other parties' contributions, whose keys are derived from `PSBT_GLOBAL_SORT_SEED`.
 
 [^canonical-id]: Replicas compare canonical IDs to check that they hold the same data. A plain transaction ID also commits to the order of inputs and outputs, but the canonical ID sorts with an empty seed, so its order might not be the final order. The tag marks the ID as order-independent, so a matching ID does not signal agreement on order.
+
+[^conflict-ok]: Are there certain keys where it would be acceptable to have conflicting values? Yes (e.g tapleaf BIP 32 sources TODO: get key type), however the PSBTs format forbids multiple enteries. Custom join procedures should require BIP extensions and outside the scope of this BIP.
