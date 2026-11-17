@@ -36,12 +36,39 @@ def test_summary_follows_the_index_without_descriptions():
 
 
 def test_contents_keep_descriptions_under_one_title():
-    assert book.contents(INDEX) == (
+    assert book.contents(INDEX, pdf=False) == (
         "# Contents\n\n"
         "## Part\n\n"
         "* [One](one.md) - The first chapter.\n"
         "* [Two](sub/two.md) - The second chapter.\n"
     )
+
+
+def test_assembly_copies_the_pdf_it_links(tmp_path):
+    root, out = tmp_path / "root", tmp_path / "root" / "src"
+    (root / "docs").mkdir(parents=True)
+    (root / "README.md").write_text("# Intro\n")
+    (root / "docs" / "index.md").write_text("# Part\n")
+    pdf = tmp_path / "book.pdf"
+    pdf.write_bytes(b"%PDF")
+    book.assemble(root)
+    assert "PDF" not in (out / "contents.md").read_text()
+    assert not (out / "fungi-docs.pdf").exists()
+    book.assemble(root, pdf)
+    assert "[PDF](fungi-docs.pdf)" in (out / "contents.md").read_text()
+    assert (out / "fungi-docs.pdf").read_bytes() == b"%PDF"
+
+
+def test_a_missing_pdf_leaves_src_as_it_was(tmp_path):
+    root, out = tmp_path / "root", tmp_path / "root" / "src"
+    (root / "docs").mkdir(parents=True)
+    (root / "README.md").write_text("# Intro\n")
+    (root / "docs" / "index.md").write_text("# Part\n")
+    book.assemble(root)
+    before = (out / "contents.md").read_text()
+    with pytest.raises(FileNotFoundError):
+        book.assemble(root, tmp_path / "missing.pdf")
+    assert (out / "contents.md").read_text() == before
 
 
 @pytest.mark.parametrize(

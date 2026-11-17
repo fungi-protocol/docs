@@ -41,16 +41,38 @@
 
         buildPhase = ''
           export FONTCONFIG_FILE=${fontconfig}
-          python3 contrib/book.py .
+          python3 contrib/book.py --pdf ${pdf}/fungi-docs.pdf .
           mdbook build -d $out
         '';
 
         dontInstall = true;
       };
+
+      pdf = site.overrideAttrs (old: {
+        name = "fungi-docs-pdf";
+        nativeBuildInputs = old.nativeBuildInputs ++ [
+          pkgs.mdbook-pandoc
+          pkgs.pandoc
+          # pandoc converts the mermaid SVGs to PDF with rsvg-convert.
+          pkgs.librsvg
+          pkgs.texliveSmall
+        ];
+        # MDBOOK_OUTPUT replaces the [output] table of book.toml, so this
+        # build runs only the pandoc renderer.
+        MDBOOK_OUTPUT = builtins.toJSON {
+          pandoc.profile.pdf.output-file = "fungi-docs.pdf";
+        };
+        buildPhase = ''
+          export FONTCONFIG_FILE=${fontconfig}
+          python3 contrib/book.py .
+          mdbook build -d book
+          install -D book/pdf/fungi-docs.pdf $out/fungi-docs.pdf
+        '';
+      });
     in
     {
       checks = {
-        inherit site;
+        inherit site pdf;
         book =
           pkgs.runCommand "book-tests"
             { nativeBuildInputs = [ (pkgs.python3.withPackages (ps: [ ps.pytest ps.pyyaml ])) ]; }
@@ -72,7 +94,7 @@
       };
 
       packages = {
-        inherit site;
+        inherit site pdf;
         default = site;
       };
     };
