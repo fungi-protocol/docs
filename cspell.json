@@ -21,7 +21,8 @@
     "python",
     "networking-terms",
     "bitcoin-privacy",
-    "repo-tooling"
+    "repo-tooling",
+    "background"
   ],
   "dictionaryDefinitions": [
     {
@@ -31,6 +32,10 @@
     {
       "name": "repo-tooling",
       "path": "./cspell/tooling.txt"
+    },
+    {
+      "name": "background",
+      "path": "./cspell/background.txt"
     }
   ]
 }
