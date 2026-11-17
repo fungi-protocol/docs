@@ -75,7 +75,7 @@ flowchart LR
 
 BIP 174 lets a [Combiner](https://github.com/bitcoin/bips/blob/master/bip-0174.mediawiki#user-content-Combiner) resolve a key that has two different values by picking either one. That is safe when every PSBT shares the same unsigned transaction, because the worst outcome is an invalid signature. Once inputs and outputs can differ between copies, picking one value can change what the transaction spends or pays, and the result depends on the order in which copies were combined.[^conflict-ok]
 
-A strict Combiner therefore MUST fail when the same key has conflicting values. With this rule, the transaction effects of combining a set of PSBTs do not depend on the order or grouping of the combinations, or on whether a PSBT is combined more than once. The following sections define exceptions that keep these properties.
+A strict Combiner therefore MUST fail when the same key has conflicting values. With this rule, the transaction effects of combining a set of PSBTs do not depend on the order or grouping of the combinations, or on whether a PSBT is combined more than once.[^consensus-valid] The following sections define exceptions that keep these properties.
 
 #### Combining PSBTs
 
@@ -161,13 +161,6 @@ That at least makes the transaction ID malleable, so it cannot be used with any 
 
 Those transactions can also differ enough in what they spend or pay that funds can be lost, not only because someone is cheating, but even because a contribution was left out. `SIGHASH_ALL` commits to the full output list, so a signature cannot authorize a transaction the signer did not intend.
 
-#### Mutually exclusive inputs
-
-Two `OP_CLTV`-encumbered coins, one with a height-based and one with a time-based `nLockTime` constraint, will impose mutually exclusive validity requirements on their spending transactions, and therefore cannot be spent together in the same transaction.
-
-// TODO: IIRC BIP 370 specifies the constraints so maybe reference that
-In order to ensure the least upper bound of any two inputs under consideration is not only defined but also corresponds to a valid transaction, the *Creator* role can restrict the domain of spendable inputs before inputs are added.
-
 ## Backwards Compatibility
 
 This document does not define a new PSBT version. It extends BIP 370.
@@ -211,3 +204,5 @@ Rust implementation: <https://github.com/fungi-protocol/concurrent-psbt/>
 [^canonical-id]: Replicas compare canonical IDs to check that they hold the same data. A plain transaction ID also commits to the order of inputs and outputs, but the canonical ID sorts with an empty seed, so its order might not be the final order. The tag marks the ID as order-independent, so a matching ID does not signal agreement on order.
 
 [^conflict-ok]: Are there certain keys where it would be acceptable to have conflicting values? Yes (e.g tapleaf BIP 32 sources TODO: get key type), however the PSBTs format forbids multiple entries. Custom join procedures should require BIP extensions and outside the scope of this BIP.
+
+[^consensus-valid]: The strict Combiner does not guarantee a consensus-valid transaction. For example, two `OP_CLTV`-encumbered coins, one with a height-based and one with a time-based `nLockTime` constraint. Restricting which inputs and outputs may be added so that every combination is valid is out of scope.
