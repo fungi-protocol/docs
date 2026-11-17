@@ -114,7 +114,7 @@ For consistent ordering, we define `PSBT_IN_SORT_KEY` and `PSBT_OUT_SORT_KEY` fi
 
 `PSBT_GLOBAL_TX_UNORDERED` SHOULD NOT be cleared until every input and output has a sort key, explicit or derived, and the inputs and outputs have been sorted.
 
-// TODO: warning that applications should be careful about how sort keys are selected as it may be a fingerprint
+Explicit sort keys can fingerprint the wallet that chose them. Wallets SHOULD choose explicit sort keys so that the resulting order does not reveal which software built the transaction or which inputs and outputs belong to the same party.[^explicit-sort-keys]
 
 At sorting time, every input and output must have a sort key defined. There are three possibilities: all keys must be explicitly provided, some keys may be derived, or all keys must be derived, as determined by the `PSBT_GLOBAL_SORT_KEY_DERIVATION` field. If any keys must be derived then `PSBT_GLOBAL_SORT_SEED` MUST be set. [^sort-deterministic][^derived-sort-keys]
 
@@ -201,6 +201,8 @@ Rust implementation: <https://github.com/fungi-protocol/concurrent-psbt/>
 [^sort-deterministic]: Why is `PSBT_GLOBAL_SORT_KEY_DERIVATION` needed in addition to `PSBT_GLOBAL_SORT_SEED`? A *Creator* that will enforce consistent ordering with `PSBT_GLOBAL_SORT_SEED`, but does not have a seed yet, SHOULD set `PSBT_GLOBAL_SORT_KEY_DERIVATION`. If the seed is supplied later, the *Creator* SHOULD set `PSBT_GLOBAL_SORT_KEY_DERIVATION` to `0x01` and leave `PSBT_GLOBAL_SORT_SEED` unset. Each replica then supplies `PSBT_GLOBAL_SORT_SEED` locally at sort time, as a commitment to the protocol transcript or something similar. Otherwise the *Creator* SHOULD initialize `PSBT_GLOBAL_SORT_SEED` with sufficient randomness so that some order can always be determined, or set `PSBT_GLOBAL_SORT_KEY_DERIVATION` to `0x00` to require explicit sort keys.
 
 [^derived-sort-keys]: Derived sort keys need not be written into the PSBT. Derive them, sort, and discard them.
+
+[^explicit-sort-keys]: Derived sort keys are unpredictable because `PSBT_GLOBAL_SORT_SEED` must contain at least 128 bits of randomness. Explicit sort keys have no such requirement, and the order they produce is visible in the final transaction. A predictable scheme can be a privacy liability.
 
 [^sighash-all]: No known use case needs these flags in a multiparty transaction of three or more parties. Specify a carve-out in a separate document if one appears, for example Kickstarter-style crowdfunding with `SIGHASH_ANYONECANPAY|SIGHASH_ALL` signing.
 
