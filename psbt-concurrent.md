@@ -90,7 +90,7 @@ The Strict combiner, MUST update `PSBT_GLOBAL_INPUT_COUNT` and/or `PSBT_GLOBAL_O
 
 // TODO: provide some examples here
 
-The strict Combiner MUST fail combining for either the inputs or outputs if the corresponding BIP 370 `PSBT_GLOBAL_TX_MODIFIABLE` flag is set and the combinations represent additions of inputs or outputs. [^tx-modifiable]
+The strict Combiner MUST fail combining for either the inputs or outputs unless the corresponding BIP 370 `PSBT_GLOBAL_TX_MODIFIABLE` flag is set and the combinations represent additions of inputs or outputs. [^tx-modifiable]
 
 Unordered PSBTs MUST be shuffled prior to reserialization.[^shuffle] If all inputs and outputs have [sort keys](#ordering-inputs-and-outputs), the key-based ordering MAY be used instead of shuffling.
 
