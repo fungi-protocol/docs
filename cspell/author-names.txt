@@ -1,0 +1,13 @@
+# Author names
+Alpern
+Dwork
+Elkind
+Keidar
+Kleppmann
+Kogias
+Kogman
+Kokoris
+Naor
+Paverd
+Poupko
+Stockmeyer
