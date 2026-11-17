@@ -51,6 +51,17 @@ html:is(.coal, .navy, .ayu) .mermaid-light {
     display: none;
 }
 
+/* Without JavaScript, mdBook darkens the page by prefers-color-scheme alone. */
+@media (prefers-color-scheme: dark) {
+    html:not(.js) .mermaid-dark {
+        display: block;
+    }
+
+    html:not(.js) .mermaid-light {
+        display: none;
+    }
+}
+
 /* A .dot is expected to pick colours that hold up on either page background,
    so nothing here touches them. Only graphviz's own defaults are lifted: plain
    black disappears against a dark page, and a diagram that says nothing about
