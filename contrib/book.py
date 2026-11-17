@@ -4,10 +4,12 @@
 docs/index.md, the bundle's OKF index, states the chapter order: its
 headings become the parts of SUMMARY.md and its entries the chapters,
 without their descriptions, so an entry must name a chapter, by a path
-relative to docs/, and every chapter must have an entry. The README is
-the introduction, and the index, with its descriptions, is the contents
-page. Frontmatter is checked and then dropped, as mdbook would render it
-as text. The bundle's other files are copied as they are.
+relative to docs/, and every chapter must have an entry. An entry
+indented two spaces more than the entry above it is a sub-chapter of
+that entry. The README is the introduction, and the index, with its
+descriptions, is the contents page. Frontmatter is checked and then
+dropped, as mdbook would render it as text. The bundle's other files are
+copied as they are.
 
     python3 book.py ROOT
 """
@@ -21,7 +23,7 @@ from pathlib import Path
 import yaml
 
 FRONTMATTER = re.compile(r"\A---\n(.*?)\n---[ \t]*(?:\n+|\Z)", re.DOTALL)
-ENTRY = re.compile(r"\* \[([^\]]+)\]\(([^)\s]+)\)(?: - .*)?")
+ENTRY = re.compile(r"( *)\* \[([^\]]+)\]\(([^)\s]+)\)(?: - .*)?")
 DOCS = "docs"
 # As set in book.toml.
 SRC = "src"
@@ -29,6 +31,8 @@ CONTENTS = "contents.md"
 GENERATED = ("README.md", "SUMMARY.md", CONTENTS)
 STATUSES = ("draft", "stable", "deprecated")
 RESERVED = ("index.md", "log.md")
+# A sub-chapter's entry is indented this much more than its chapter's.
+INDENT = "  "
 
 
 def strip_frontmatter(text):
@@ -71,20 +75,35 @@ def check(name, text):
 def summary(index, pages):
     """SUMMARY.md from an OKF index: `# Part` headings and
     `* [Title](file.md) - description` entries, naming each of `pages`,
-    the paths in docs/ of the pages the book is given."""
+    the paths in docs/ of the pages the book is given. Indented entries
+    are nested under the entry above them."""
     out = ["# Summary", "", "[Introduction](README.md)", f"[Contents]({CONTENTS})"]
     listed = set()
+    # The depth of the entry above, or -1 at the start of a part, where
+    # there is none to nest under.
+    above = -1
     for line in strip_frontmatter(index).splitlines():
         if line.startswith("# "):
             out += ["", line, ""]
+            above = -1
         elif m := ENTRY.fullmatch(line):
-            chapter = posixpath.normpath(m.group(2))
+            depth, odd = divmod(len(m.group(1)), len(INDENT))
+            if odd:
+                raise ValueError(f"index entry has odd indentation: {line!r}")
+            if depth > above + 1:
+                if above < 0:
+                    raise ValueError(f"index entry has no entry above: {line!r}")
+                raise ValueError(
+                    f"index entry is nested more than one level deeper: {line!r}"
+                )
+            above = depth
+            chapter = posixpath.normpath(m.group(3))
             if chapter not in pages:
                 raise ValueError(f"index entry is not a chapter: {line!r}")
             if chapter in listed:
                 raise ValueError(f"index entry repeats a chapter: {line!r}")
             listed.add(chapter)
-            out.append(f"- [{m.group(1)}]({chapter})")
+            out.append(f"{INDENT * depth}- [{m.group(2)}]({chapter})")
         elif line.strip():
             raise ValueError(f"unexpected line in index: {line!r}")
     if unlisted := sorted(set(pages) - listed):

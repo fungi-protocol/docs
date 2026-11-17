@@ -1,4 +1,30 @@
 # Bitcoin and privacy vocabulary
+backout
+feerates
+locktimes
+# Cited journals
+Academiae
+Scientiarum
+Hungaricae
+# Network science
+assortativity
+deanonymizes
+multiroute
+superconcentrator
+# Cited authors
+Chekuri
+Idleman
+Karrer
+Kishimoto
+Maurer
+Neudecker
+Orlin
+multiset
+satisfice
+satisficing
+sumset
+coindays
+precomputation
 blockspace
 CoinJoin
 deanonymization

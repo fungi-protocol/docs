@@ -17,6 +17,8 @@ after = ["links", "graphviz"]
 [preprocessor.katex]
 command = "mdbook-katex"
 after = ["links"]
+# mdbook-graphviz re-serializes the markdown, escaping the TeX source.
+before = ["graphviz"]
 
 [output.html]
 additional-css = ["theme/diagrams.css"]

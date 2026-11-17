@@ -18,7 +18,9 @@
           ../book.toml
           ../docs
           ../theme
-          (lib.fileset.fileFilter (f: f.hasExt "py" && !lib.hasPrefix "test_" f.name) ../contrib)
+          (lib.fileset.fileFilter (
+            f: f.hasExt "py" && !lib.hasPrefix "test_" f.name && f.name != "robot_marks.py"
+          ) ../contrib)
         ];
       };
 
@@ -53,12 +55,24 @@
         inherit site;
         book =
           pkgs.runCommand "book-tests"
-            { nativeBuildInputs = [ (pkgs.python3.withPackages (ps: [ ps.pytest ps.pyyaml ])) ]; }
+            {
+              nativeBuildInputs = [
+                (pkgs.python3.withPackages (ps: [ ps.hypothesis ps.pytest ps.pyyaml ]))
+              ];
+              HYPOTHESIS_PROFILE = "nix";
+            }
             ''
-              cd ${../contrib}
+              # Hypothesis keeps a cache next to the tests.
+              cp -r ${../contrib} contrib && chmod -R u+w contrib && cd contrib
               pytest -p no:cacheprovider
               touch $out
             '';
+        # A 🤖 mark covers what is under it, so one inside another is
+        # redundant, and a chapter's title and index entry must agree.
+        robot-marks = pkgs.runCommand "robot-marks" { nativeBuildInputs = [ pkgs.python3 ]; } ''
+          python3 ${../contrib/robot_marks.py} --docs ${../docs} check
+          touch $out
+        '';
         # lychee loads CA certificates to build its HTTP client even with --offline.
         links = pkgs.runCommand "links" { nativeBuildInputs = [ pkgs.lychee pkgs.cacert ]; } ''
           # The site is served from /docs/, so a link from the root leaves it.
