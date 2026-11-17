@@ -9,6 +9,7 @@
           mdbook-graphviz
           mdbook-katex
           graphviz
+          pandoc
           (python3.withPackages (ps: [ ps.pytest ps.pyyaml ]))
         ]);
       };
