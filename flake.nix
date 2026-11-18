@@ -20,6 +20,7 @@
         ./nix/devshell.nix
         ./nix/spellcheck.nix
         ./nix/apps/validate-commits
+        ./nix/apps/stale-drafts
       ];
     };
 }

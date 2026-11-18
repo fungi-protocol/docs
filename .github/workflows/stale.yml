@@ -1,0 +1,30 @@
+name: Stale drafts
+on:
+  schedule:
+    # Arbitrary time, to avoid GitHub's peak-load scheduling delays.
+    - cron: "41 5 * * *"
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: stale-drafts
+  cancel-in-progress: false
+jobs:
+  stale:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      actions: read # lets hestia detect evicted cache entries upfront
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: DeterminateSystems/nix-installer-action@3138316df39ed29be04236d7ffc686fa525866aa # v23
+      - uses: Mic92/hestia@dfed9ced335d28978ba74e513939a10db1f71025 # v3.1.0
+        with:
+          # Do not upload paths that cache.nixos.org already serves.
+          upstream-cache-filter: true
+      - name: Open issues for drafts that go stale within a week
+        run: nix run --no-update-lock-file .#stale-drafts -- .
+        env:
+          GH_TOKEN: ${{ github.token }}

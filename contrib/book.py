@@ -42,10 +42,11 @@ def frontmatter(text):
 
 
 def check(name, text):
-    """A page must have a type and a status, and a draft the instant from
-    which it is stale, where OKF makes both optional. Whether that instant
-    has passed is not checked, so that a build does not depend on when it
-    runs."""
+    """Returns the frontmatter of a page, a draft's stale_after as a
+    datetime. A page must have a type and a status, and a draft the instant
+    from which it is stale, where OKF makes both optional. Whether that
+    instant has passed is not checked, so that a build does not depend on
+    when it runs."""
     try:
         fields = frontmatter(text)
     except (yaml.YAMLError, ValueError) as e:
@@ -66,6 +67,8 @@ def check(name, text):
             raise ValueError(
                 f"{name}: a draft needs stale_after, an ISO 8601 instant with an offset"
             )
+        fields["stale_after"] = stale_after
+    return fields
 
 
 def summary(index, pages):
@@ -99,15 +102,22 @@ def contents(index):
     return "# Contents\n\n" + body
 
 
+def read_pages(docs):
+    """The text of each page in `docs` but the reserved ones, by its path
+    relative to `docs`."""
+    return {
+        page.relative_to(docs).as_posix(): page.read_text()
+        for page in sorted(docs.rglob("*.md"))
+        if page.name not in RESERVED
+    }
+
+
 def assemble(root):
     docs, out = root / DOCS, root / SRC
     index = (docs / "index.md").read_text()
-    pages = {}
-    for page in sorted(docs.rglob("*.md")):
-        if page.name not in RESERVED:
-            name = page.relative_to(docs).as_posix()
-            pages[name] = page.read_text()
-            check(name, pages[name])
+    pages = read_pages(docs)
+    for name, text in pages.items():
+        check(name, text)
     # docs/README.md directs readers of the repository to the book; as a
     # chapter it would overwrite the introduction.
     pages.pop("README.md", None)
