@@ -147,7 +147,7 @@ If `PSBT_GLOBAL_SORT_KEY_DERIVATION` is omitted, explicit sort keys are used whe
 
 A canonical ID identifies equivalent PSBT states, letting replicas check whether their copies agree. For unordered PSBTs, the ID ignores the order of inputs and outputs, but any other difference in the unsigned transaction changes it.
 
-For unordered transactions (i.e. `PSBT_GLOBAL_TX_UNORDERED` is set), the `PSBT_GLOBAL_SORT_SEED`, `PSBT_IN_SORT_KEY`, and `PSBT_OUT_SORT_KEY` fields are cleared, and then the ordering procedure of the previous section is used without the restriction of a non-empty `PSBT_GLOBAL_SORT_SEED` (sorting with an empty seed).
+For unordered transactions (i.e. `PSBT_GLOBAL_TX_UNORDERED` is set), the `PSBT_GLOBAL_SORT_SEED`, `PSBT_GLOBAL_SORT_DETERMINISTIC`, `PSBT_IN_SORT_KEY`, and `PSBT_OUT_SORT_KEY` fields are ignored, and then the ordering procedure of the previous section is used without the restriction of a non-empty `PSBT_GLOBAL_SORT_SEED` (sorting with an empty seed).
 
 The ID MUST then be computed as the BIP 370 unique ID of the sorted transaction, with the double SHA256 replaced by a BIP 340-style tagged hash with the tag `ConcurrentPSBTUnorderedState`.[^canonical-id] This keeps the ID of an unordered PSBT distinct from the ID of an ordered PSBT with the same contents, even when it has no outputs.
 
@@ -193,7 +193,7 @@ Rust implementation: <https://github.com/fungi-protocol/concurrent-psbt/>
 
 [^derived-sort-keys]: Derived sort keys need not be written into the PSBT. Derive them, sort, and discard them.
 
-[^explicit-sort-keys]: Explicit sort keys MAY fingerprint the wallet that chose them. Wallets SHOULD choose explicit sort keys so that the resulting order does not reveal which software built the transaction or which inputs and outputs belong to the same party. Derived sort keys are unpredictable because `PSBT_GLOBAL_SORT_SEED` must contain at least 128 bits of randomness. Explicit sort keys have no such requirement, and the order they produce is visible in the final transaction. A predictable scheme MAY be a privacy liability.
+[^explicit-sort-keys]: Explicit sort keys MAY fingerprint the client that chose them. Clients SHOULD choose explicit sort keys so that the resulting order does not reveal which software built the transaction or which inputs and outputs belong to the same party. Derived sort keys are unpredictable because `PSBT_GLOBAL_SORT_SEED` must contain at least 128 bits of randomness. Explicit sort keys have no such requirement, and the order they produce is visible in the final transaction. A predictable scheme MAY be a privacy liability.
 
 [^sighash-all]: No known use case needs these flags in a multiparty transaction of three or more parties. Specify a carve-out in a separate document if one appears, for example Kickstarter-style crowdfunding with `SIGHASH_ANYONECANPAY|SIGHASH_ALL` signing.
 
