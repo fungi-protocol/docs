@@ -1,2 +1,4 @@
 book/
 result
+.hypothesis/
+.ipynb_checkpoints/

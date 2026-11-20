@@ -18,6 +18,7 @@
         ./nix/preprocessors.nix
         ./nix/site.nix
         ./nix/devshell.nix
+        ./nix/notebook.nix
         ./nix/spellcheck.nix
         ./nix/apps/validate-commits
       ];
