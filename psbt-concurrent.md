@@ -143,13 +143,38 @@ where `H_s` is a BIP 340-style tagged hash, with the tag being `ConcurrentPSBTDe
 
 If `PSBT_GLOBAL_SORT_KEY_DERIVATION` is omitted, explicit sort keys are used where present and every missing sort key is derived.[^mixed-mode] If any input or output is missing an explicit sort key, `PSBT_GLOBAL_SORT_SEED` MUST be set at the time of sorting. If every input and output has an explicit sort key, no sort keys are derived.
 
-### Canonical Identifier
+### Unique Identifier
 
+<!-- 
+TODO: remove later if we agree with the current uncommented section
 A canonical ID identifies equivalent PSBT states, letting replicas check whether their copies agree. For unordered PSBTs, the ID ignores the order of inputs and outputs, but any other difference in the unsigned transaction changes it.
 
 For unordered transactions (i.e. `PSBT_GLOBAL_TX_UNORDERED` is set), the `PSBT_GLOBAL_SORT_SEED`, `PSBT_GLOBAL_SORT_KEY_DERIVATION`, `PSBT_IN_SORT_KEY`, and `PSBT_OUT_SORT_KEY` fields are ignored, and then the ordering procedure of the previous section is used without the restriction of a non-empty `PSBT_GLOBAL_SORT_SEED` (sorting with an empty seed).
 
-The ID MUST then be computed as the BIP 370 unique ID of the sorted transaction, with the double SHA256 replaced by a BIP 340-style tagged hash with the tag `ConcurrentPSBTUnorderedState`.[^canonical-id] This keeps the ID of an unordered PSBT distinct from the ID of an ordered PSBT with the same contents, even when it has no outputs.
+The ID MUST then be computed as the BIP 370 unique ID of the sorted transaction, with the double SHA256 replaced by a BIP 340-style tagged hash with the tag `ConcurrentPSBTUnorderedState`.[^canonical-id] This keeps the ID of an unordered PSBT distinct from the ID of an ordered PSBT with the same contents, even when it has no outputs. -->
+
+BIP 370 defines a [unique identifier](https://github.com/bitcoin/bips/blob/master/bip-0370.mediawiki#user-content-Unique_Identification) for a version 2 PSBT. This section extends it to unordered PSBTs. The ID identifies the current state of the PSBT, letting replicas check whether their copies agree. Two unordered PSBTs have the same ID if and only if they spend the same inputs, create the same outputs with the same `PSBT_OUT_UNIQUE_ID` values, have the same transaction version and locktime, and were given the same session context. Input and output order is ignored, as are sequence numbers, which BIP 370 also excludes.
+
+For unordered transactions (i.e. `PSBT_GLOBAL_TX_UNORDERED` is set), the `PSBT_GLOBAL_SORT_SEED`, `PSBT_GLOBAL_SORT_KEY_DERIVATION`, `PSBT_IN_SORT_KEY`, and `PSBT_OUT_SORT_KEY` fields are ignored. Inputs and outputs [derive](#derivation-rules) their sort key using an empty seed and are sorted.
+
+The ID MUST be computed as a BIP 340-style tagged hash, with the tag `ConcurrentPSBTUnordered`, of the concatenation of:
+
+1. the BIP 370 unique ID of the sorted transaction
+2. 32 bytes of session context, all zeros if unused [^session-id]
+3. the `PSBT_OUT_UNIQUE_ID` of each output, in sorted order
+
+```python
+def unique_id(psbt, session_context=bytes(32)):
+    sorted_psbt = sort(psbt, seed=b"")
+    return tagged_hash(
+        "ConcurrentPSBTUnordered",
+        sorted_psbt.bip370_unique_id()
+        + session_context
+        + b"".join(out.unique_id for out in sorted_psbt.outputs),
+    )
+```
+
+The tag keeps the ID of an unordered PSBT distinct from the ID of an ordered PSBT with the same contents, even when it has no outputs.
 
 ### Divergence and SIGHASH flags
 
@@ -201,8 +226,8 @@ Rust implementation: <https://github.com/fungi-protocol/concurrent-psbt/>
 
 [^mixed-mode]: Mixed mode allows clients to fix the relative order of some of their own inputs and outputs with explicit sort keys while the PSBT is merged with other parties' contributions, whose keys are derived from `PSBT_GLOBAL_SORT_SEED`.
 
-[^canonical-id]: Replicas compare canonical IDs to check that they hold the same data. A plain transaction ID also commits to the order of inputs and outputs, but the canonical ID sorts with an empty seed, so its order might not be the final order. The tag marks the ID as order-independent, so a matching ID does not signal agreement on order.
-
 [^conflict-ok]: Are there certain keys where it would be acceptable to have conflicting values? Yes (e.g tapleaf BIP 32 sources TODO: get key type), however the PSBTs format forbids multiple entries. Custom join procedures should require BIP extensions and outside the scope of this BIP.
 
 [^consensus-valid]: The strict Combiner does not guarantee a consensus-valid transaction. For example, two `OP_CLTV`-encumbered coins, one with a height-based and one with a time-based `nLockTime` constraint. Restricting which inputs and outputs may be added so that every combination is valid is out of scope.
+
+[^session-id]: Applications may want to differenciate between concurrent sessions of the same protocol with the same PSBT fragments.
