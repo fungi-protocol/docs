@@ -33,7 +33,7 @@ The new field types for distributed PSBT construction are as follows:
 
 | Name | `keytype` | `keydata` | `keydata` Description | `valuedata` | `valuedata` Description |
 | --- | --- | --- | --- | --- | --- |
-| Transaction Unordered Flag | `PSBT_GLOBAL_TX_UNORDERED = TBD` | None | No key data | `<8-bit uint>` | If present, MUST be set to `0x03` to indicate inputs and outputs are unordered. |
+| Transaction Unordered Flag | `PSBT_GLOBAL_TX_UNORDERED = TBD` | None | No key data | `<8-bit uint>` | If present, MUST be set to `0x03` [^tx-unordered] to indicate inputs and outputs are unordered. |
 | Sort Seed | `PSBT_GLOBAL_SORT_SEED = TBD` | None | No key data | `<bytes globalseed>` | Random seed used to derive deterministic sort keys when explicit per-map sort keys are absent. |
 | Deterministic Sort Flag | `PSBT_GLOBAL_SORT_KEY_DERIVATION = TBD` | None | No key data | `<8-bit uint>` | A value of `0x01` indicates all sort keys MUST be deterministically derived. A value of `0x00` indicates only explicit sort keys are allowed and `PSBT_GLOBAL_SORT_SEED` is disallowed. If absent, missing explicit sort keys are derived. At the time of sorting either every input and output must have an explicit sort key, or `PSBT_GLOBAL_SORT_SEED` MUST be set and sort key derivation allowed or required. |
 
@@ -73,9 +73,9 @@ flowchart LR
 
 ### Strict Combiner
 
-BIP 174 lets a [Combiner](https://github.com/bitcoin/bips/blob/master/bip-0174.mediawiki#user-content-Combiner) resolve a key that has two different values by picking either one. That is safe when every PSBT shares the same unsigned transaction, because the worst outcome is an invalid signature. Once inputs and outputs can differ between copies, picking one value can change what the transaction spends or pays, and the result depends on the order in which copies were combined.[^conflict-ok]
+BIP 174 lets a [Combiner](https://github.com/bitcoin/bips/blob/master/bip-0174.mediawiki#user-content-Combiner) resolve a key that has two different values by picking either one. That is safe when every PSBT shares the same unsigned transaction, because the worst outcome is an invalid signature. Once inputs and outputs can differ between copies, picking one value can change what the transaction spends or pays, and the result depends on the order in which copies were combined.
 
-A strict Combiner therefore MUST fail when the same key has conflicting values. With this rule, the transaction effects of combining a set of PSBTs do not depend on the order or grouping of the combinations, or on whether a PSBT is combined more than once.[^consensus-valid] The following sections define exceptions that keep these properties.
+A strict Combiner therefore MUST fail when the same key has conflicting values.[^conflict-ok] With this rule, the transaction effects of combining a set of PSBTs do not depend on the order or grouping of the combinations, or on whether a PSBT is combined more than once.[^consensus-valid] The following sections define exceptions that keep these properties.
 
 #### Combining PSBTs
 
@@ -87,8 +87,6 @@ When `PSBT_GLOBAL_TX_UNORDERED` is set, the input or output maps are not disting
 
 Inputs or outputs with identical unique IDs are merged by combining their key-value pairs with the stricter, idempotent combination [defined above](#strict-combiner). After merging the inputs and outputs that appear in both PSBTs, the strict Combiner additionally keeps the ones that appear in only one of them.
 The Strict combiner, MUST update `PSBT_GLOBAL_INPUT_COUNT` and/or `PSBT_GLOBAL_OUTPUT_COUNT` if combining introduces new inputs and/or outputs.
-
-// TODO: provide some examples here
 
 The strict Combiner MUST fail combining for either the inputs or outputs unless the corresponding BIP 370 `PSBT_GLOBAL_TX_MODIFIABLE` flag is set and the combinations represent additions of inputs or outputs. [^tx-modifiable]
 
