@@ -50,7 +50,7 @@ The new field types for distributed PSBT construction are as follows:
 | Output Unique ID | `PSBT_OUT_UNIQUE_ID = TBD` | None | No key data | `<bytes unique id>` | Universally unique identifier for output map identity under unordered output semantics. |
 | Output Sort Key | `PSBT_OUT_SORT_KEY = TBD` | None | No key data | `<bytes sort key>` | Arbitrary lexicographically comparable value used to order outputs. |
 
-Example collaborative protocol (*N* wallets).Each wallet i adds its own inputs and outputs, then joins the PSBTs it receives from the other wallets. Once every wallet's inputs and outputs are present, it clears PSBT_GLOBAL_TX_UNORDERED and PSBT_GLOBAL_TX_MODIFIABLE, sorts the inputs and outputs, and signs. The signed PSBT goes to the Combiner.
+Example collaborative protocol (*N* wallets).Each wallet i adds its own inputs and outputs, then joins the PSBTs it receives from the other wallets. Once every wallet's inputs and outputs are present, peers sort the inputs and outputs, clear PSBT_GLOBAL_TX_UNORDERED and PSBT_GLOBAL_TX_MODIFIABLE, and sign. The signed PSBT goes to the Combiner.
 
 ```mermaid
 flowchart LR
