@@ -54,7 +54,7 @@ Example collaborative protocol (*N* wallets). Each wallet i adds its own inputs 
 
 ```mermaid
 flowchart LR
-    CC[Creator / Constructor] -->|sets PSBT_GLOBAL_SORT_SEED| Pop
+    CC[Creator / Constructor] --> Pop
 
     subgraph Wi ["Wallet i"]
         direction LR
