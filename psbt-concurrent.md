@@ -16,11 +16,11 @@ BIP 174 defines *Combiner* functionality. Its purpose is to integrate informatio
 
 ### BIP 370 Constructor
 
-BIP 370 introduced a *Constructor* role, which allows signaling that the inputs or outputs of a PSBT are modifiable. Arbitrary mutation of the inputs and outputs is then allowed, but this assumes such state updates are done sequentially. The Combiner role is mostly unchanged in BIP 370, and is restricted to only allow combining fields of PSBTs which spend and create the same outputs in the same order. This facilitates aggregating signatures from multiple parties in any order, but has limited usefulness during the construction of the PSBT.
+BIP 370 introduced a *Constructor* role, which allows signaling that the inputs or outputs of a PSBT are modifiable. Arbitrary mutation of the inputs and outputs is then allowed, but this assumes such state updates are done sequentially. The Combiner role is mostly unchanged in BIP 370 and is restricted to only allow combining fields of PSBTs which spend the same inputs and create the same outputs in the same order. This facilitates aggregating signatures from multiple parties in any order, but has limited usefulness during the construction of the PSBT.
 
 ### `joinpsbts`
 
-Bitcoin Core implements a [`joinpsbts`](https://bitcoincore.org/en/doc/32.0.0/rpc/rawtransactions/joinpsbts/) RPC command that allows merging PSBTs, so long as their input sets are disjoint. For example, if PSBT A spends coin x and B spends y they can be joined however not with PSBT C which spends x as well. In other words, `joinpsbts` is not idempotent with respect to the inputs nor the outputs -- which can lead to over spending. For example, joining a PSBT with distinct inputs but the same outputs will create two identical outputs. Lastly, `joinpsbts` is not associative or commutative because it shuffles. In the concurrent setting this will lead to replicas having diverging copies.
+Bitcoin Core implements a [`joinpsbts`](https://bitcoincore.org/en/doc/32.0.0/rpc/rawtransactions/joinpsbts/) RPC command that allows merging PSBTs, so long as their input sets are disjoint. For example, if PSBT A spends coin x and B spends y, they can be joined, but neither can be joined with C, which also spends x. Also, `joinpsbts` is not idempotent with respect to the inputs or outputs, which can lead to overspending. For example, joining a PSBT with distinct inputs but the same outputs will create two identical outputs. Lastly, `joinpsbts` is not associative or commutative because it shuffles. In the concurrent setting this will lead to replicas having diverging copies.
 
 ## Specification
 
@@ -35,7 +35,7 @@ The new field types for distributed PSBT construction are as follows:
 | --- | --- | --- | --- | --- | --- |
 | Transaction Unordered Flag | `PSBT_GLOBAL_TX_UNORDERED = TBD` | None | No key data | `<8-bit uint>` | If present, MUST be set to `0x03` [^tx-unordered] to indicate inputs and outputs are unordered. |
 | Sort Seed | `PSBT_GLOBAL_SORT_SEED = TBD` | None | No key data | `<bytes globalseed>` | Random seed used to derive deterministic sort keys when explicit per-map sort keys are absent. |
-| Deterministic Sort Flag | `PSBT_GLOBAL_SORT_KEY_DERIVATION = TBD` | None | No key data | `<8-bit uint>` | A value of `0x01` indicates all sort keys MUST be deterministically derived. A value of `0x00` indicates only explicit sort keys are allowed and `PSBT_GLOBAL_SORT_SEED` is disallowed. If absent, missing explicit sort keys are derived. At the time of sorting either every input and output must have an explicit sort key, or `PSBT_GLOBAL_SORT_SEED` MUST be set and sort key derivation allowed or required. |
+| Deterministic Sort Flag | `PSBT_GLOBAL_SORT_KEY_DERIVATION = TBD` | None | No key data | `<8-bit uint>` | A value of `0x01` indicates all sort keys MUST be deterministically derived. A value of `0x00` indicates only explicit sort keys are allowed and `PSBT_GLOBAL_SORT_SEED` is disallowed. If absent, missing explicit sort keys are derived. At the time of sorting, either every input and output must have an explicit sort key, or `PSBT_GLOBAL_SORT_SEED` MUST be set and sort key derivation allowed or required. |
 
 ### New per-input types
 
@@ -50,7 +50,7 @@ The new field types for distributed PSBT construction are as follows:
 | Output Unique ID | `PSBT_OUT_UNIQUE_ID = TBD` | None | No key data | `<bytes unique id>` | Universally unique identifier for output map identity under unordered output semantics. |
 | Output Sort Key | `PSBT_OUT_SORT_KEY = TBD` | None | No key data | `<bytes sort key>` | Arbitrary lexicographically comparable value used to order outputs. |
 
-Example collaborative protocol (*N* wallets).Each wallet i adds its own inputs and outputs, then joins the PSBTs it receives from the other wallets. Once every wallet's inputs and outputs are present, peers sort the inputs and outputs, clear PSBT_GLOBAL_TX_UNORDERED and PSBT_GLOBAL_TX_MODIFIABLE, and sign. The signed PSBT goes to the Combiner.
+Example collaborative protocol (*N* wallets). Each wallet i adds its own inputs and outputs, then joins the PSBTs it receives from the other wallets. Once every wallet's inputs and outputs are present, peers sort the inputs and outputs, clear `PSBT_GLOBAL_TX_UNORDERED` and `PSBT_GLOBAL_TX_MODIFIABLE`, and sign. The signed PSBT goes to the Combiner.
 
 ```mermaid
 flowchart LR
@@ -83,12 +83,12 @@ Reordering a transaction's inputs or outputs does not change which coins it spen
 
 To represent this, we define a global field `PSBT_GLOBAL_TX_UNORDERED`, indicating whether the order of inputs and outputs should be ignored. When present, it MUST be set to `0x03`, indicating the transaction is unordered.[^tx-unordered]
 
-When `PSBT_GLOBAL_TX_UNORDERED` is set, the input or output maps are not distinguished by their index, but instead by a unique identifier defined for each input or output.
+When `PSBT_GLOBAL_TX_UNORDERED` is set, the input and output maps are not distinguished by their index, but instead by a unique identifier defined for each input or output.
 
 Inputs or outputs with identical unique IDs are merged by combining their key-value pairs with the stricter, idempotent combination [defined above](#strict-combiner). After merging the inputs and outputs that appear in both PSBTs, the strict Combiner additionally keeps the ones that appear in only one of them.
-The Strict combiner, MUST update `PSBT_GLOBAL_INPUT_COUNT` and/or `PSBT_GLOBAL_OUTPUT_COUNT` if combining introduces new inputs and/or outputs.
+The strict Combiner MUST update `PSBT_GLOBAL_INPUT_COUNT` and/or `PSBT_GLOBAL_OUTPUT_COUNT` if combining introduces new inputs and/or outputs.
 
-The strict Combiner MUST fail combining for either the inputs or outputs unless the corresponding BIP 370 `PSBT_GLOBAL_TX_MODIFIABLE` flag is set and the combinations represent additions of inputs or outputs. [^tx-modifiable]
+The strict Combiner MUST fail combining for either the inputs or outputs unless the corresponding BIP 370 `PSBT_GLOBAL_TX_MODIFIABLE` flag is set and the combinations represent additions of inputs or outputs.[^tx-modifiable]
 
 Unordered PSBTs MUST be shuffled prior to reserialization.[^shuffle] If all inputs and outputs have [sort keys](#ordering-inputs-and-outputs), the key-based ordering MAY be used instead of shuffling.
 
@@ -112,12 +112,12 @@ For consistent ordering, we define explicit (`PSBT_IN_SORT_KEY` and `PSBT_OUT_SO
 
 `PSBT_GLOBAL_TX_UNORDERED` SHOULD NOT be cleared until every input and output has a sort key, explicit or derived, and the inputs and outputs have been sorted.
 
-At sorting time, every input and output must have a sort key defined. There are three possibilities: all keys must be explicitly provided, some keys may be derived, or all keys must be derived, as determined by the `PSBT_GLOBAL_SORT_KEY_DERIVATION` field. If any keys must be derived then `PSBT_GLOBAL_SORT_SEED` MUST be set. [^sort-deterministic][^derived-sort-keys]
+At sorting time, every input and output must have a sort key defined. There are three possibilities: all keys must be explicitly provided, some keys may be derived, or all keys must be derived, as determined by the `PSBT_GLOBAL_SORT_KEY_DERIVATION` field. If any keys must be derived, then `PSBT_GLOBAL_SORT_SEED` MUST be set.[^sort-deterministic][^derived-sort-keys]
 
 | Explicit sort keys | `PSBT_GLOBAL_SORT_KEY_DERIVATION=0x00` | `PSBT_GLOBAL_SORT_KEY_DERIVATION` omitted | `PSBT_GLOBAL_SORT_KEY_DERIVATION=0x01` |
 | --- | --- | --- | --- |
 | none | INVALID | `PSBT_GLOBAL_SORT_SEED` MUST be set. Derive every sort key. | `PSBT_GLOBAL_SORT_SEED` MUST be set. Derive every sort key. |
-| some but not all | INVALID | `PSBT_GLOBAL_SORT_SEED` MUST be set. Derive missing sort key. | INVALID |
+| some but not all | INVALID | `PSBT_GLOBAL_SORT_SEED` MUST be set. Derive missing sort keys. | INVALID |
 | every input and output | `PSBT_GLOBAL_SORT_SEED` MUST NOT be set. Use the explicit keys. | No sort keys are derived. Use the explicit sort keys. | INVALID |
 
 #### Explicit sort keys
@@ -153,12 +153,12 @@ The ID MUST then be computed as the BIP 370 unique ID of the sorted transaction,
 
 BIP 370 defines a [unique identifier](https://github.com/bitcoin/bips/blob/master/bip-0370.mediawiki#user-content-Unique_Identification) for a version 2 PSBT. This section extends it to unordered PSBTs. The ID identifies the current state of the PSBT, letting replicas check whether their copies agree. Two unordered PSBTs have the same ID if and only if they spend the same inputs, create the same outputs with the same `PSBT_OUT_UNIQUE_ID` values, have the same transaction version and locktime, and were given the same session context. Input and output order is ignored, as are sequence numbers, which BIP 370 also excludes.
 
-For unordered transactions (i.e. `PSBT_GLOBAL_TX_UNORDERED` is set), the `PSBT_GLOBAL_SORT_SEED`, `PSBT_GLOBAL_SORT_KEY_DERIVATION`, `PSBT_IN_SORT_KEY`, and `PSBT_OUT_SORT_KEY` fields are ignored. Inputs and outputs [derive](#derivation-rules) their sort key using an empty seed and are sorted.
+For unordered transactions (i.e. `PSBT_GLOBAL_TX_UNORDERED` is set), the `PSBT_GLOBAL_SORT_SEED`, `PSBT_GLOBAL_SORT_KEY_DERIVATION`, `PSBT_IN_SORT_KEY`, and `PSBT_OUT_SORT_KEY` fields are ignored. Inputs and outputs [derive](#derivation-rules) their sort keys using an empty seed and are sorted.
 
 The ID MUST be computed as a BIP 340-style tagged hash, with the tag `ConcurrentPSBTUnordered`, of the concatenation of:
 
 1. the BIP 370 unique ID of the sorted transaction
-2. 32 bytes of session context, all zeros if unused [^session-id]
+2. 32 bytes of session context, all zeros if unused[^session-id]
 3. the `PSBT_OUT_UNIQUE_ID` of each output, in sorted order
 
 ```python
@@ -192,7 +192,7 @@ Existing software can parse and preserve the new fields as [BIP 174 requires](ht
 
 Clients convert to BIP 174 by carrying the new fields as proprietary fields, then following the BIP 370 conversion. Convert a BIP 174 PSBT to BIP 370 before sorting or applying the strict Combiner.
 
-While `PSBT_GLOBAL_TX_UNORDERED` is set, PSBTs MUST be combined only by a strict Combiner, not the BIP 174 Combiner. Once `PSBT_GLOBAL_TX_UNORDERED` is cleared the PSBT is semantically the same as a BIP 370 or BIP 174. The new fields need not be retained.
+While `PSBT_GLOBAL_TX_UNORDERED` is set, PSBTs MUST be combined only by a strict Combiner, not the BIP 174 Combiner. Once `PSBT_GLOBAL_TX_UNORDERED` is cleared the PSBT is semantically the same as a BIP 370 or BIP 174 PSBT. The new fields need not be retained.
 
 For BIP 174, input unique IDs may be extracted from the unsigned transaction in the global map. For BIP 370, they may be extracted from the input map (`PSBT_IN_PREVIOUS_TXID` and `PSBT_IN_OUTPUT_INDEX`). However, output unique IDs MUST NOT be derived from the output maps (`PSBT_OUT_AMOUNT` and `PSBT_OUT_SCRIPT`).
 
@@ -224,8 +224,8 @@ Rust implementation: <https://github.com/fungi-protocol/concurrent-psbt/>
 
 [^mixed-mode]: Mixed mode allows clients to fix the relative order of some of their own inputs and outputs with explicit sort keys while the PSBT is merged with other parties' contributions, whose keys are derived from `PSBT_GLOBAL_SORT_SEED`.
 
-[^conflict-ok]: Are there certain keys where it would be acceptable to have conflicting values? Yes (e.g tapleaf BIP 32 sources TODO: get key type), however the PSBTs format forbids multiple entries. Custom join procedures should require BIP extensions and outside the scope of this BIP.
+[^conflict-ok]: Are there certain keys where it would be acceptable to have conflicting values? Yes (e.g., the leaf hashes of `PSBT_IN_TAP_BIP32_DERIVATION`, which could be merged as a set union); however, the PSBT format forbids multiple entries. Custom join procedures should require BIP extensions and are outside the scope of this BIP.
 
-[^consensus-valid]: The strict Combiner does not guarantee a consensus-valid transaction. For example, two `OP_CLTV`-encumbered coins, one with a height-based and one with a time-based `nLockTime` constraint. Restricting which inputs and outputs may be added so that every combination is valid is out of scope.
+[^consensus-valid]: The strict Combiner does not guarantee a consensus-valid transaction. For example, two `OP_CLTV`-encumbered coins cannot be spent together if one has a height-based and the other a time-based `nLockTime` constraint. Restricting which inputs and outputs may be added so that every combination is valid is out of scope.
 
-[^session-id]: Applications may want to differenciate between concurrent sessions of the same protocol with the same PSBT fragments.
+[^session-id]: Applications may want to differentiate between concurrent sessions of the same protocol with the same PSBT fragments.
