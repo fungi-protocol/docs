@@ -16,7 +16,7 @@ BIP 174 defines *Combiner* functionality. Its purpose is to integrate informatio
 
 ### BIP 370 Constructor
 
-BIP 370 introduced a *Constructor* role, which allows signaling that the inputs or outputs of a PSBT are modifiable. Arbitrary mutation of the inputs and outputs is then allowed, but this assumes such state updates are done sequentially. The Combiner role is mostly unchanged in BIP 370 and is restricted to only allow combining fields of PSBTs which spend the same inputs and create the same outputs in the same order. This facilitates aggregating signatures from multiple parties in any order, but has limited usefulness during the construction of the PSBT.
+BIP 370 introduced a *Constructor* role, which allows signaling that the inputs or outputs of a PSBT are modifiable. Arbitrary mutation of the inputs and outputs is then allowed, but this assumes such state updates are done sequentially. The Combiner role is mostly unchanged in BIP 370. BIP 174 only allows combining PSBTs with the same unique identifier, which constrains it to PSBTs which spend the same inputs and create the same outputs in the same order. This facilitates aggregating signatures from multiple parties in any order, but has limited usefulness during the construction of the PSBT.
 
 ### `joinpsbts`
 
