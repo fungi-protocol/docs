@@ -20,7 +20,7 @@ BIP 370 introduced a *Constructor* role, which allows signaling that the inputs 
 
 ### `joinpsbts`
 
-Bitcoin Core implements a [`joinpsbts`](https://bitcoincore.org/en/doc/32.0.0/rpc/rawtransactions/joinpsbts/) RPC command that allows merging PSBTs, so long as their input sets are disjoint. For example, if PSBT A spends coin x and B spends y, they can be joined, but neither can be joined with C, which also spends x. Also, `joinpsbts` is not idempotent with respect to the inputs or outputs, which can lead to overspending. For example, joining a PSBT with distinct inputs but the same outputs will create two identical outputs. Lastly, `joinpsbts` is not associative or commutative because it shuffles. In the concurrent setting this will lead to replicas having diverging copies.
+Bitcoin Core implements a [`joinpsbts`](https://bitcoincore.org/en/doc/32.0.0/rpc/rawtransactions/joinpsbts/) RPC command that allows merging PSBTs, so long as their input sets are disjoint.  `joinpsbts` is not idempotent with respect to outputs, which can lead to overspending. For example, joining a PSBT with distinct inputs but the same outputs will create two identical outputs. Lastly, `joinpsbts` is not associative or commutative because it shuffles after merging. In the concurrent setting this will lead to replicas having diverging copies.
 
 ## Specification
 
@@ -180,7 +180,7 @@ Those transactions can also differ enough in what they spend or pay that funds c
 
 ## Backward Compatibility
 
-This document does not define a new PSBT version. It extends BIP 370.[^version-3]
+This document does not define a new PSBT version. It extends BIP 370.
 
 Existing software can parse and preserve the new fields as [BIP 174 requires](https://github.com/bitcoin/bips/blob/master/bip-0174.mediawiki#extensibility), but cannot interpret them. Clients that do not implement the new rules from this specification therefore cannot take part in unordered construction, and MUST NOT be used to combine PSBTs while `PSBT_GLOBAL_TX_UNORDERED` is set.
 
@@ -197,6 +197,10 @@ Rust implementation: <https://github.com/fungi-protocol/concurrent-psbt/>
 ## Test Vectors
 
 // TODO: add link to test vectors
+
+## Open Questions
+
+- Extend BIP 370 or define PSBT version 3? Older clients will parse and preserve the new fields. BIP 174 forbids combining different PSBTs, and the BIP 370 unique ID changes whenever inputs or outputs are added or reordered, so an older Combiner fails rather than producing a transaction with unintended effects. At worst, a signature made before sorting is invalidated. A version 3 PSBT would ensure clients enforce the new rules unambigiously; however, we risk opening the scope more than we need to.
 
 ## Rationale
 
@@ -221,7 +225,5 @@ Rationale is given in the footnotes below, referenced from the specification whe
 [^conflict-ok]: Are there certain keys where it would be acceptable to have conflicting values? Yes (e.g., the leaf hashes of `PSBT_IN_TAP_BIP32_DERIVATION`, which could be merged as a set union); however, the PSBT format forbids multiple entries. Custom join procedures should require BIP extensions and are outside the scope of this BIP.
 
 [^consensus-valid]: The strict Combiner does not guarantee a consensus-valid transaction. For example, two `OP_CLTV`-encumbered coins cannot be spent together if one has a height-based and the other a time-based `nLockTime` constraint. Restricting which inputs and outputs may be added so that every combination is valid is out of scope.
-
-[^version-3]: Why extend BIP 370 instead of defining PSBT version 3? Older clients will parse and preserve the new fields. BIP 174 forbids combining different PSBTs, and the BIP 370 unique ID changes whenever inputs or outputs are added or reordered, so an older Combiner fails rather than producing a transaction with unintended effects. At worst, a signature made before sorting is invalidated. However, a version 3 PSBT would ensure clients enforce the new rules, at the cost of adoption.
 
 [^session-id]: Applications may want to differentiate between concurrent sessions of the same protocol with the same PSBT fragments.
