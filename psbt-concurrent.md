@@ -145,15 +145,15 @@ If `PSBT_GLOBAL_SORT_KEY_DERIVATION` is omitted, explicit sort keys are used whe
 
 ### Unique Identifier
 
-BIP 370 defines a [unique identifier](https://github.com/bitcoin/bips/blob/master/bip-0370.mediawiki#user-content-Unique_Identification) for a version 2 PSBT. This section extends it to unordered PSBTs. The ID identifies the current state of the PSBT, letting replicas check whether their copies agree. Two unordered PSBTs have the same ID if and only if they spend the same inputs, create the same outputs with the same `PSBT_OUT_UNIQUE_ID` values, have the same transaction version and locktime, and were given the same session context. Input and output order is ignored, as are sequence numbers, which BIP 370 also excludes.
+BIP 370 defines a [unique identifier](https://github.com/bitcoin/bips/blob/master/bip-0370.mediawiki#user-content-Unique_Identification) for a version 2 PSBT. This section extends it to unordered PSBTs. This ID identifies the current state of the PSBT, letting replicas check whether their copies agree. Two unordered PSBTs have the same unique identifier if and only if they spend the same inputs, create the same outputs with the same `PSBT_OUT_UNIQUE_ID` values, have the same transaction version and locktime, and were given the same session context. Input and output order is ignored, as are sequence numbers, which BIP 370 also excludes.
 
 For unordered transactions (i.e. `PSBT_GLOBAL_TX_UNORDERED` is set), the `PSBT_GLOBAL_SORT_SEED`, `PSBT_GLOBAL_SORT_KEY_DERIVATION`, `PSBT_IN_SORT_KEY`, and `PSBT_OUT_SORT_KEY` fields are ignored. Inputs and outputs [derive](#derivation-rules) their sort keys using an empty seed and are sorted.
 
-The ID MUST be computed as a BIP 340-style tagged hash, with the tag `ConcurrentPSBTUnordered`, of the concatenation of:
+The unique identifier MUST be computed as a BIP 340-style tagged hash, with the tag `ConcurrentPSBTUnordered`, of the concatenation of:
 
 1. the BIP 370 unique ID of the sorted transaction
 2. 32 bytes of session context, all zeros if unused[^session-id]
-3. the `PSBT_OUT_UNIQUE_ID` of each output, in sorted order
+3. the 16-byte `PSBT_OUT_UNIQUE_ID` of each output, in sorted order
 
 ```python
 def unique_id(psbt, session_context=bytes(32)):
