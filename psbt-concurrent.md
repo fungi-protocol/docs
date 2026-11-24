@@ -24,6 +24,8 @@ Bitcoin Core implements a [`joinpsbts`](https://bitcoincore.org/en/doc/32.0.0/rp
 
 ## Specification
 
+The key words "MUST", "MUST NOT", "SHOULD", "SHOULD NOT", and "MAY" in this document are to be interpreted as described in RFC 2119.
+
 The new field types for distributed PSBT construction are as follows:
 
 ### New global types
@@ -35,7 +37,7 @@ The new field types for distributed PSBT construction are as follows:
 | --- | --- | --- | --- | --- | --- |
 | Transaction Unordered Flag | `PSBT_GLOBAL_TX_UNORDERED = TBD` | None | No key data | `<8-bit uint>` | If present, MUST be set to `0x03` [^tx-unordered] to indicate inputs and outputs are unordered. |
 | Sort Seed | `PSBT_GLOBAL_SORT_SEED = TBD` | None | No key data | `<bytes globalseed>` | Random seed used to derive deterministic sort keys when explicit per-map sort keys are absent. |
-| Deterministic Sort Flag | `PSBT_GLOBAL_SORT_KEY_DERIVATION = TBD` | None | No key data | `<8-bit uint>` | A value of `0x01` indicates all sort keys MUST be deterministically derived. A value of `0x00` indicates only explicit sort keys are allowed and `PSBT_GLOBAL_SORT_SEED` is disallowed. If absent, missing explicit sort keys are derived. At the time of sorting, either every input and output must have an explicit sort key, or `PSBT_GLOBAL_SORT_SEED` MUST be set and sort key derivation allowed or required. |
+| Deterministic Sort Flag | `PSBT_GLOBAL_SORT_KEY_DERIVATION = TBD` | None | No key data | `<8-bit uint>` | A value of `0x01` indicates all sort keys MUST be deterministically derived. A value of `0x00` indicates only explicit sort keys are allowed and `PSBT_GLOBAL_SORT_SEED` is disallowed. If absent, missing explicit sort keys are derived. At the time of sorting, either every input and output MUST have an explicit sort key, or `PSBT_GLOBAL_SORT_SEED` MUST be set and sort key derivation allowed or required. |
 
 ### New per-input types
 
@@ -102,7 +104,7 @@ Outputs are identified by a new `PSBT_OUT_UNIQUE_ID` field, which MUST be 16 byt
 
 This ensures that repeated addition of the same output is idempotent, and that if two replicas both attempt to add an identical output (same `PSBT_OUT_AMOUNT` and `PSBT_OUT_SCRIPT`), it will still result in two copies of the output as intended. This is important because a transaction with only a single copy will appear correct but end up losing the value of all missing copies to mining fees.
 
-Outputs with an identical `PSBT_OUT_SCRIPT` MAY be merged deterministically by adding their amounts after sorting. Merging during sorting is NOT allowed, because a merged output has no `PSBT_OUT_UNIQUE_ID`. The merged output takes the position of the first of the outputs it replaces and the `PSBT_GLOBAL_OUTPUT_COUNT` must be decremented by one less than the number of outputs merged. Unique IDs are no longer required once sorted, because outputs are then identified by position. See the next section on ordering.
+Outputs with an identical `PSBT_OUT_SCRIPT` MAY be merged deterministically by adding their amounts after sorting. Merging during sorting is NOT allowed, because a merged output has no `PSBT_OUT_UNIQUE_ID`. The merged output takes the position of the first of the outputs it replaces and the `PSBT_GLOBAL_OUTPUT_COUNT` MUST be decremented by one less than the number of outputs merged. Unique IDs are no longer required once sorted, because outputs are then identified by position. See the next section on ordering.
 
 ### Ordering inputs and outputs
 
@@ -112,7 +114,7 @@ For consistent ordering, we define explicit (`PSBT_IN_SORT_KEY` and `PSBT_OUT_SO
 
 `PSBT_GLOBAL_TX_UNORDERED` SHOULD NOT be cleared until every input and output has a sort key, explicit or derived, and the inputs and outputs have been sorted.
 
-At sorting time, every input and output must have a sort key defined. There are three possibilities: all keys must be explicitly provided, some keys may be derived, or all keys must be derived, as determined by the `PSBT_GLOBAL_SORT_KEY_DERIVATION` field. If any keys must be derived, then `PSBT_GLOBAL_SORT_SEED` MUST be set.[^sort-deterministic][^derived-sort-keys]
+At sorting time, every input and output MUST have a sort key defined. There are three possibilities: all keys must be explicitly provided, some keys may be derived, or all keys must be derived, as determined by the `PSBT_GLOBAL_SORT_KEY_DERIVATION` field. If any keys must be derived, then `PSBT_GLOBAL_SORT_SEED` MUST be set.[^sort-deterministic][^derived-sort-keys]
 
 | Explicit sort keys | `PSBT_GLOBAL_SORT_KEY_DERIVATION=0x00` | `PSBT_GLOBAL_SORT_KEY_DERIVATION` omitted | `PSBT_GLOBAL_SORT_KEY_DERIVATION=0x01` |
 | --- | --- | --- | --- |
@@ -184,7 +186,7 @@ That at least makes the transaction ID malleable, so it cannot be used with any 
 
 Those transactions can also differ enough in what they spend or pay that funds can be lost, not only because someone is cheating, but even because a contribution was left out. `SIGHASH_ALL` commits to the full output list, so a signature cannot authorize a transaction the signer did not intend.
 
-## Backwards Compatibility
+## Backward Compatibility
 
 This document does not define a new PSBT version. It extends BIP 370.
 
