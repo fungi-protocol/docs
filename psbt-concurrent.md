@@ -90,7 +90,7 @@ When `PSBT_GLOBAL_TX_UNORDERED` is set, the input and output maps are not distin
 Inputs or outputs with identical unique IDs are merged by combining their key-value pairs with the stricter, idempotent combination [defined above](#strict-combiner). After merging the inputs and outputs that appear in both PSBTs, the strict Combiner additionally keeps the ones that appear in only one of them.
 The strict Combiner MUST update `PSBT_GLOBAL_INPUT_COUNT` and/or `PSBT_GLOBAL_OUTPUT_COUNT` if combining introduces new inputs and/or outputs.
 
-The strict Combiner MUST fail if the combined PSBTs differ in their inputs or outputs, unless the corresponding `PSBT_GLOBAL_TX_MODIFIABLE` flag is set and every difference is new input or output.[^tx-modifiable]
+The strict Combiner MUST fail if the combined PSBTs differ in their input or output sets unless the corresponding `PSBT_GLOBAL_TX_MODIFIABLE` flag is set. If a set is unmodifiable, the strict Combiner can still combine differing fields associated with the same inputs and outputs.[^tx-modifiable]
 
 Unordered PSBTs MUST be shuffled prior to reserialization.[^shuffle] If all inputs and outputs have [sort keys](#ordering-inputs-and-outputs), the key-based ordering MAY be used instead of shuffling.
 
