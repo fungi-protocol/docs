@@ -145,14 +145,6 @@ If `PSBT_GLOBAL_SORT_KEY_DERIVATION` is omitted, explicit sort keys are used whe
 
 ### Unique Identifier
 
-<!-- 
-TODO: remove later if we agree with the current uncommented section
-A canonical ID identifies equivalent PSBT states, letting replicas check whether their copies agree. For unordered PSBTs, the ID ignores the order of inputs and outputs, but any other difference in the unsigned transaction changes it.
-
-For unordered transactions (i.e. `PSBT_GLOBAL_TX_UNORDERED` is set), the `PSBT_GLOBAL_SORT_SEED`, `PSBT_GLOBAL_SORT_KEY_DERIVATION`, `PSBT_IN_SORT_KEY`, and `PSBT_OUT_SORT_KEY` fields are ignored, and then the ordering procedure of the previous section is used without the restriction of a non-empty `PSBT_GLOBAL_SORT_SEED` (sorting with an empty seed).
-
-The ID MUST then be computed as the BIP 370 unique ID of the sorted transaction, with the double SHA256 replaced by a BIP 340-style tagged hash with the tag `ConcurrentPSBTUnorderedState`.[^canonical-id] This keeps the ID of an unordered PSBT distinct from the ID of an ordered PSBT with the same contents, even when it has no outputs. -->
-
 BIP 370 defines a [unique identifier](https://github.com/bitcoin/bips/blob/master/bip-0370.mediawiki#user-content-Unique_Identification) for a version 2 PSBT. This section extends it to unordered PSBTs. The ID identifies the current state of the PSBT, letting replicas check whether their copies agree. Two unordered PSBTs have the same ID if and only if they spend the same inputs, create the same outputs with the same `PSBT_OUT_UNIQUE_ID` values, have the same transaction version and locktime, and were given the same session context. Input and output order is ignored, as are sequence numbers, which BIP 370 also excludes.
 
 For unordered transactions (i.e. `PSBT_GLOBAL_TX_UNORDERED` is set), the `PSBT_GLOBAL_SORT_SEED`, `PSBT_GLOBAL_SORT_KEY_DERIVATION`, `PSBT_IN_SORT_KEY`, and `PSBT_OUT_SORT_KEY` fields are ignored. Inputs and outputs [derive](#derivation-rules) their sort keys using an empty seed and are sorted.
@@ -188,7 +180,7 @@ Those transactions can also differ enough in what they spend or pay that funds c
 
 ## Backward Compatibility
 
-This document does not define a new PSBT version. It extends BIP 370.
+This document does not define a new PSBT version. It extends BIP 370.[^version-3]
 
 Existing software can parse and preserve the new fields as [BIP 174 requires](https://github.com/bitcoin/bips/blob/master/bip-0174.mediawiki#extensibility), but cannot interpret them. Clients that do not implement the new rules from this specification therefore cannot take part in unordered construction, and MUST NOT be used to combine PSBTs while `PSBT_GLOBAL_TX_UNORDERED` is set.
 
@@ -198,10 +190,6 @@ While `PSBT_GLOBAL_TX_UNORDERED` is set, PSBTs MUST be combined only by a strict
 
 For BIP 174, input unique IDs may be extracted from the unsigned transaction in the global map. For BIP 370, they may be extracted from the input map (`PSBT_IN_PREVIOUS_TXID` and `PSBT_IN_OUTPUT_INDEX`). However, output unique IDs MUST NOT be derived from the output maps (`PSBT_OUT_AMOUNT` and `PSBT_OUT_SCRIPT`).
 
-## Open Question
-
-- Should we just define a version 3 instead of an extension? The benefits are safety and simplicity. The major downsides are adoption and bikeshedding over details.
-
 ## Reference Implementation
 
 Rust implementation: <https://github.com/fungi-protocol/concurrent-psbt/>
@@ -209,6 +197,10 @@ Rust implementation: <https://github.com/fungi-protocol/concurrent-psbt/>
 ## Test Vectors
 
 // TODO: add link to test vectors
+
+## Rationale
+
+Rationale is given in the footnotes below, referenced from the specification where each decision applies.
 
 [^tx-unordered]: This specification does not mark inputs and outputs unordered independently. No known use case requires that. `0x03` sets both bits, so a later specification can allow either bit independently and still overlap this one when both are set.
 
@@ -229,5 +221,7 @@ Rust implementation: <https://github.com/fungi-protocol/concurrent-psbt/>
 [^conflict-ok]: Are there certain keys where it would be acceptable to have conflicting values? Yes (e.g., the leaf hashes of `PSBT_IN_TAP_BIP32_DERIVATION`, which could be merged as a set union); however, the PSBT format forbids multiple entries. Custom join procedures should require BIP extensions and are outside the scope of this BIP.
 
 [^consensus-valid]: The strict Combiner does not guarantee a consensus-valid transaction. For example, two `OP_CLTV`-encumbered coins cannot be spent together if one has a height-based and the other a time-based `nLockTime` constraint. Restricting which inputs and outputs may be added so that every combination is valid is out of scope.
+
+[^version-3]: Why extend BIP 370 instead of defining PSBT version 3? Older clients will parse and preserve the new fields. BIP 174 forbids combining different PSBTs, and the BIP 370 unique ID changes whenever inputs or outputs are added or reordered, so an older Combiner fails rather than producing a transaction with unintended effects. At worst, a signature made before sorting is invalidated. However, a version 3 PSBT would ensure clients enforce the new rules, at the cost of adoption.
 
 [^session-id]: Applications may want to differentiate between concurrent sessions of the same protocol with the same PSBT fragments.
