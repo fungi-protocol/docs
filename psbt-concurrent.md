@@ -214,7 +214,7 @@ Rationale is given in the footnotes below, referenced from the specification whe
 
 [^derived-sort-keys]: Derived sort keys need not be written into the PSBT. Derive them, sort, and discard them.
 
-[^explicit-sort-keys]: Explicit sort keys MAY fingerprint the client that chose them. Clients SHOULD choose explicit sort keys so that the resulting order does not reveal which software built the transaction or which inputs and outputs belong to the same party. Derived sort keys are unpredictable because `PSBT_GLOBAL_SORT_SEED` must contain at least 128 bits of randomness. Explicit sort keys have no such requirement, and the order they produce is visible in the final transaction. A predictable scheme MAY be a privacy liability.
+[^explicit-sort-keys]: Explicit sort keys may fingerprint the client that chose them. Clients SHOULD choose explicit sort keys so that the resulting order does not reveal which software built the transaction or which inputs and outputs belong to the same party. Derived sort keys are unpredictable because `PSBT_GLOBAL_SORT_SEED` must contain at least 128 bits of randomness. Explicit sort keys have no such requirement, and the order they produce is visible in the final transaction. A predictable scheme may be a privacy liability.
 
 [^sighash-all]: No known use case needs these flags in a multiparty transaction of three or more parties. Specify a carve-out in a separate document if one appears, for example Kickstarter-style crowdfunding with `SIGHASH_ANYONECANPAY|SIGHASH_ALL` signing.
 
