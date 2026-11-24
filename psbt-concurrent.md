@@ -20,7 +20,7 @@ BIP 370 introduced a *Constructor* role, which allows signaling that the inputs 
 
 ### `joinpsbts`
 
-Bitcoin Core implements a [`joinpsbts`](https://bitcoincore.org/en/doc/32.0.0/rpc/rawtransactions/joinpsbts/) RPC command that allows merging PSBTs, so long as their input sets are disjoint.  `joinpsbts` is not idempotent with respect to outputs, which can lead to overspending. For example, joining a PSBT with distinct inputs but the same outputs will create two identical outputs. Lastly, `joinpsbts` is not associative or commutative because it shuffles after merging. In the concurrent setting this will lead to replicas having diverging copies.
+Bitcoin Core implements a [`joinpsbts`](https://bitcoincore.org/en/doc/32.0.0/rpc/rawtransactions/joinpsbts/) RPC command that allows merging PSBTs, so long as their input sets are disjoint. `joinpsbts` is not idempotent with respect to outputs, which can lead to overspending. For example, joining a PSBT with distinct inputs but the same outputs will create two identical outputs. Lastly, `joinpsbts` is not associative or commutative because it shuffles after merging. In the concurrent setting this will lead to replicas having diverging copies.
 
 ## Specification
 
