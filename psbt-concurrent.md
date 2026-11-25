@@ -86,9 +86,9 @@ Reordering a transaction's inputs or outputs does not change which coins it spen
 
 To represent this, we define a global field `PSBT_GLOBAL_TX_UNORDERED`, indicating whether the order of inputs and outputs should be ignored. When present, it MUST be set to `0x03`, indicating the transaction is unordered.[^tx-unordered]
 
-When `PSBT_GLOBAL_TX_UNORDERED` is set, the input and output maps are not distinguished by their index, but instead by a unique identifier defined for each input or output.
+When `PSBT_GLOBAL_TX_UNORDERED` is set, the input and output maps are not distinguished by their index, but instead by a unique identifier defined for each [input](#unique-identifiers-for-inputs) or [output](#unique-identifiers-for-outputs).
 
-Inputs or outputs with identical unique IDs are merged by combining their key-value pairs with the stricter, idempotent combination [defined above](#strict-combiner). After merging the inputs and outputs that appear in both PSBTs, the strict Combiner additionally keeps the ones that appear in only one of them.
+Inputs or outputs with identical unique identifiers are merged by combining their key-value pairs with the stricter, idempotent combination [defined above](#strict-combiner). After merging the inputs and outputs that appear in both PSBTs, the strict Combiner additionally keeps the ones that appear in only one of them.
 The strict Combiner MUST update `PSBT_GLOBAL_INPUT_COUNT` and/or `PSBT_GLOBAL_OUTPUT_COUNT` if combining introduces new inputs and/or outputs.
 
 The strict Combiner MUST fail if the combined PSBTs differ in their input or output sets unless the corresponding `PSBT_GLOBAL_TX_MODIFIABLE` flag is set. If a set is unmodifiable, the strict Combiner can still combine differing fields associated with the same inputs and outputs.[^tx-modifiable]
