@@ -170,7 +170,7 @@ The tag keeps the ID of an unordered PSBT distinct from the ID of an ordered PSB
 
 ### Divergence and SIGHASH flags
 
-Signers MUST sign only using `SIGHASH_ALL`.[^sighash-all]
+Signers MUST sign only using `SIGHASH_ALL`, or `SIGHASH_DEFAULT` for taproot inputs.[^sighash-all]
 
 If a signer uses `SIGHASH_ANYONECANPAY` or `SIGHASH_NONE`, the signature stays valid for a family of transactions that do not have the same effects.
 
@@ -200,7 +200,7 @@ Rust implementation: <https://github.com/fungi-protocol/concurrent-psbt/>
 
 ## Open Questions
 
-- Extend BIP 370 or define PSBT version 3? Older clients will parse and preserve the new fields. BIP 174 forbids combining different PSBTs, and the BIP 370 unique ID changes whenever inputs or outputs are added or reordered, so an older Combiner fails rather than producing a transaction with unintended effects. At worst, a signature made before sorting is invalidated. A version 3 PSBT would ensure clients enforce the new rules unambigiously; however, we risk opening the scope more than we need to.
+- Extend BIP 370 or define PSBT version 3? Older clients will parse and preserve the new fields. BIP 174 forbids combining different PSBTs, and the BIP 370 unique ID changes whenever inputs or outputs are added or reordered, so an older Combiner fails rather than producing a transaction with unintended effects. At worst, a signature made before sorting is invalidated. A version 3 PSBT would ensure clients enforce the new rules unambiguously; however, we risk opening the scope more than we need to.
 
 ## Rationale
 
